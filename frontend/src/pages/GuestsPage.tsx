@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, api } from '../api'
 import { useAuth } from '../auth'
-import type { Guest, GuestCategory, GuestPayload } from '../types'
+import type {
+  Guest,
+  GuestCategory,
+  GuestImportResult,
+  GuestPayload,
+} from '../types'
 
 export default function GuestsPage() {
   const { logout } = useAuth()
@@ -27,6 +32,12 @@ export default function GuestsPage() {
   const [newCategoryName, setNewCategoryName] = useState('')
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
   const [editCategoryName, setEditCategoryName] = useState('')
+
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importPreview, setImportPreview] = useState<GuestImportResult | null>(
+    null,
+  )
+  const [importCommitted, setImportCommitted] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -215,6 +226,63 @@ export default function GuestsPage() {
     }
   }
 
+  function handleImportFileChange(event: ChangeEvent<HTMLInputElement>) {
+    setImportFile(event.target.files?.[0] ?? null)
+    setImportPreview(null)
+    setImportCommitted(false)
+    setError('')
+    setNotice('')
+  }
+
+  async function handlePreviewImport() {
+    if (importFile === null) return
+
+    setError('')
+    setNotice('')
+    setSaving(true)
+
+    try {
+      const result = await api.upload<GuestImportResult>(
+        '/guests/import?dry_run=true',
+        importFile,
+      )
+      setImportPreview(result)
+      setImportCommitted(false)
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Unable to preview import',
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleConfirmImport() {
+    if (importFile === null || importPreview === null) return
+    if (!window.confirm(`Import ${importPreview.valid_count} guests?`)) return
+
+    setError('')
+    setNotice('')
+    setSaving(true)
+
+    try {
+      const result = await api.upload<GuestImportResult>(
+        '/guests/import?dry_run=false',
+        importFile,
+      )
+      setImportPreview(result)
+      setImportCommitted(true)
+      setNotice(
+        `Imported ${result.imported} guests. ${result.invalid_count} rows skipped.`,
+      )
+      reload()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Unable to import guests')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   function categoryName(categoryId: string | null): string {
     if (categoryId === null) return 'Uncategorized'
     return (
@@ -269,6 +337,9 @@ export default function GuestsPage() {
               {guests.length} invitation{guests.length === 1 ? '' : 's'} ·{' '}
               {totalCapacity} attendee capacity
             </p>
+
+            {error !== '' && <p className="error">{error}</p>}
+            {notice !== '' && <p className="success">{notice}</p>}
 
             <div className="guest-toolbar">
               <label className="field">
@@ -340,9 +411,6 @@ export default function GuestsPage() {
                   />
                 </label>
               </div>
-
-              {error !== '' && <p className="error">{error}</p>}
-              {notice !== '' && <p className="success">{notice}</p>}
 
               <div className="actions">
                 <button className="button" type="submit" disabled={saving}>
@@ -475,6 +543,94 @@ export default function GuestsPage() {
                 </li>
               ))}
             </ul>
+          )}
+        </section>
+      )}
+
+      {!loading && !needsWedding && (
+        <section className="card">
+          <h2>Import guests</h2>
+          <p className="muted">
+            Upload a CSV or XLSX file with columns: name, category,
+            max_attendees. Preview first; only valid rows are imported.
+          </p>
+
+          <label className="field">
+            <span>Guest list file</span>
+            <input
+              type="file"
+              accept=".csv,.xlsx"
+              onChange={handleImportFileChange}
+            />
+          </label>
+
+          <div className="actions">
+            <button
+              className="button"
+              type="button"
+              disabled={importFile === null || saving || importCommitted}
+              onClick={() => void handlePreviewImport()}
+            >
+              Preview import
+            </button>
+            {importPreview !== null && !importCommitted && (
+              <button
+                className="button secondary"
+                type="button"
+                disabled={saving || importPreview.valid_count === 0}
+                onClick={() => void handleConfirmImport()}
+              >
+                Import {importPreview.valid_count} guests
+              </button>
+            )}
+          </div>
+
+          {importPreview !== null && (
+            <div className="import-preview">
+              <p className="muted">
+                {importPreview.valid_count} valid ·{' '}
+                {importPreview.invalid_count} invalid
+                {importPreview.imported > 0
+                  ? ` · ${importPreview.imported} imported`
+                  : ''}
+              </p>
+
+              {importPreview.rows.length === 0 ? (
+                <p className="muted">The file has no guest rows.</p>
+              ) : (
+                <div className="import-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Row</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Max</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importPreview.rows.map((row) => (
+                        <tr
+                          key={row.row}
+                          className={
+                            row.valid ? undefined : 'import-row-invalid'
+                          }
+                        >
+                          <td>{row.row}</td>
+                          <td>{row.name === '' ? '—' : row.name}</td>
+                          <td>{row.category === '' ? '—' : row.category}</td>
+                          <td>{row.max_attendees ?? '—'}</td>
+                          <td>
+                            {row.valid ? 'Ready' : row.errors.join('; ')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           )}
         </section>
       )}

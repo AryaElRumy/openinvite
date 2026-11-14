@@ -8,11 +8,12 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const isFormData = options.body instanceof FormData
   const response = await fetch(`/api${path}`, {
     credentials: 'include',
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(options.headers ?? {}),
     },
   })
@@ -48,4 +49,9 @@ export const api = {
   put: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  upload: <T>(path: string, file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    return request<T>(path, { method: 'POST', body })
+  },
 }

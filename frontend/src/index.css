@@ -407,6 +407,34 @@ input:disabled {
   flex: 1 1 10rem;
 }
 
+.import-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.import-table {
+  overflow-x: auto;
+}
+
+.import-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.import-table th,
+.import-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.import-row-invalid td {
+  color: var(--error);
+}
+
 @media (max-width: 520px) {
   .guest-row {
     flex-direction: column;

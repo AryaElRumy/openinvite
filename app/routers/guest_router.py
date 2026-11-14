@@ -1,6 +1,17 @@
+import csv
+import io
 import secrets
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import openpyxl
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from sqlalchemy import func
 from sqlmodel import Session, select
 
@@ -12,6 +23,8 @@ from app.schema.guest_schema import (
     GuestCategoryResponse,
     GuestCategoryUpdate,
     GuestCreate,
+    GuestImportResult,
+    GuestImportRow,
     GuestResponse,
     GuestUpdate,
 )
@@ -55,14 +68,137 @@ def _category_name_taken(
     return session.exec(statement).first() is not None
 
 
-def _generate_invitation_code(session: Session) -> str:
+def _generate_invitation_code(session: Session, used: set[str] | None = None) -> str:
     while True:
         code = secrets.token_urlsafe(18)
+        if used is not None and code in used:
+            continue
         existing = session.exec(
             select(Guest).where(Guest.invitation_code == code)
         ).first()
         if existing is None:
             return code
+
+
+def _normalize_header(value: object) -> str:
+    return str(value if value is not None else "").strip().lower().replace(" ", "_")
+
+
+def _read_import_rows(
+    filename: str, contents: bytes
+) -> list[tuple[int, dict[str, str]]]:
+    suffix = filename.lower().rsplit(".", 1)[-1] if "." in filename else ""
+
+    if suffix == "csv":
+        try:
+            text = contents.decode("utf-8-sig")
+        except UnicodeDecodeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="CSV must be UTF-8 encoded",
+            ) from exc
+
+        reader = csv.DictReader(io.StringIO(text))
+        if not reader.fieldnames:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File must start with a header row",
+            )
+
+        rows = []
+        for number, row in enumerate(reader, start=2):
+            values = {
+                _normalize_header(key): str(value or "").strip()
+                for key, value in row.items()
+                if key is not None
+            }
+            if not any(values.values()):
+                continue
+            rows.append((number, values))
+        return rows
+
+    if suffix == "xlsx":
+        try:
+            workbook = openpyxl.load_workbook(
+                io.BytesIO(contents), read_only=True, data_only=True
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unable to read XLSX file",
+            ) from exc
+
+        sheet = workbook.active
+        rows = []
+        try:
+            iterator = sheet.iter_rows(values_only=True)
+            try:
+                headers = next(iterator)
+            except StopIteration as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="File must start with a header row",
+                ) from exc
+
+            keys = [_normalize_header(header) for header in headers]
+            for number, values in enumerate(iterator, start=2):
+                row = {
+                    key: "" if value is None else str(value).strip()
+                    for key, value in zip(keys, values)
+                }
+                if not any(row.values()):
+                    continue
+                rows.append((number, row))
+        finally:
+            workbook.close()
+        return rows
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Only CSV and XLSX files are supported",
+    )
+
+
+def _parse_import_row(number: int, row: dict[str, str]) -> GuestImportRow:
+    name = row.get("name", "")
+    category = row.get("category", "")
+    raw_max_attendees = row.get("max_attendees", "")
+
+    errors = []
+    if name == "":
+        errors.append("Name is required")
+    elif len(name) > 120:
+        errors.append("Name must be 120 characters or fewer")
+
+    if len(category) > 80:
+        errors.append("Category must be 80 characters or fewer")
+
+    max_attendees: int | None
+    if raw_max_attendees == "":
+        max_attendees = 1
+    else:
+        try:
+            parsed = float(raw_max_attendees)
+        except ValueError:
+            max_attendees = None
+            errors.append("Max attendees must be a whole number")
+        else:
+            if not parsed.is_integer():
+                max_attendees = None
+                errors.append("Max attendees must be a whole number")
+            else:
+                max_attendees = int(parsed)
+                if max_attendees < 1:
+                    errors.append("Max attendees must be at least 1")
+
+    return GuestImportRow(
+        row=number,
+        name=name,
+        category=category,
+        max_attendees=max_attendees,
+        valid=not errors,
+        errors=errors,
+    )
 
 
 def _require_wedding(session: Session, owner_id: str) -> Wedding:
@@ -121,6 +257,69 @@ def create_guest(
     session.commit()
     session.refresh(guest)
     return guest
+
+
+@guest_router.post("/import", response_model=GuestImportResult)
+async def import_guests(
+    dry_run: bool = True,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    wedding = _require_wedding(session, current_user.id)
+
+    contents = await file.read()
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File is too large; maximum size is 5 MB",
+        )
+
+    raw_rows = _read_import_rows(file.filename or "", contents)
+    parsed_rows = [_parse_import_row(number, row) for number, row in raw_rows]
+    valid_rows = [row for row in parsed_rows if row.valid]
+
+    imported = 0
+    if not dry_run and valid_rows:
+        existing_categories = session.exec(
+            select(GuestCategory).where(GuestCategory.wedding_id == wedding.id)
+        ).all()
+        categories_by_name = {
+            category.name.lower(): category for category in existing_categories
+        }
+        used_codes: set[str] = set()
+
+        for row in valid_rows:
+            category_id = None
+            if row.category:
+                key = row.category.lower()
+                category = categories_by_name.get(key)
+                if category is None:
+                    category = GuestCategory(wedding_id=wedding.id, name=row.category)
+                    session.add(category)
+                    categories_by_name[key] = category
+                category_id = category.id
+
+            guest = Guest(
+                wedding_id=wedding.id,
+                category_id=category_id,
+                name=row.name,
+                max_attendees=row.max_attendees or 1,
+                invitation_code=_generate_invitation_code(session, used_codes),
+            )
+            used_codes.add(guest.invitation_code)
+            session.add(guest)
+            imported += 1
+
+        session.commit()
+
+    return GuestImportResult(
+        dry_run=dry_run,
+        rows=parsed_rows,
+        valid_count=len(valid_rows),
+        invalid_count=len(parsed_rows) - len(valid_rows),
+        imported=imported,
+    )
 
 
 @guest_router.put("/{guest_id}", response_model=GuestResponse)

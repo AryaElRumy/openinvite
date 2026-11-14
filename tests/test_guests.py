@@ -1,3 +1,7 @@
+from io import BytesIO
+
+from openpyxl import Workbook
+
 PASSWORD = "password123"
 
 WEDDING = {
@@ -219,6 +223,150 @@ def test_guest_category_must_belong_to_the_owner(client):
         "/api/guests", json={"name": "Ayu", "category_id": category["id"]}
     )
     assert response.status_code == 400
+
+
+def upload_import(
+    client,
+    filename,
+    content,
+    dry_run=True,
+    content_type="text/csv",
+):
+    return client.post(
+        "/api/guests/import",
+        params={"dry_run": dry_run},
+        files={"file": (filename, content, content_type)},
+    )
+
+
+def test_csv_import_previews_and_imports_valid_rows(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+
+    csv_content = "name,category,max_attendees\nAyu,Family,2\nBima,,1\n"
+    preview = upload_import(client, "guests.csv", csv_content)
+    assert preview.status_code == 200
+    body = preview.json()
+    assert body["dry_run"] is True
+    assert body["valid_count"] == 2
+    assert body["invalid_count"] == 0
+    assert body["imported"] == 0
+    assert body["rows"][0]["row"] == 2
+    assert body["rows"][0]["max_attendees"] == 2
+    assert client.get("/api/guests").json() == []
+
+    imported = upload_import(client, "guests.csv", csv_content, dry_run=False)
+    assert imported.status_code == 200
+    assert imported.json()["imported"] == 2
+
+    guests = client.get("/api/guests").json()
+    assert [guest["name"] for guest in guests] == ["Ayu", "Bima"]
+    assert sum(guest["max_attendees"] for guest in guests) == 3
+    assert len({guest["invitation_code"] for guest in guests}) == 2
+
+    categories = client.get("/api/guest-categories").json()
+    assert [category["name"] for category in categories] == ["Family"]
+
+
+def test_csv_import_reports_invalid_rows(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+
+    csv_content = (
+        "name,category,max_attendees\n,Family,1\nCitra,Family,0\nDewi,Friends,abc\n"
+    )
+    preview = upload_import(client, "guests.csv", csv_content)
+    assert preview.status_code == 200
+    body = preview.json()
+    assert body["valid_count"] == 0
+    assert body["invalid_count"] == 3
+    assert [row["row"] for row in body["rows"]] == [2, 3, 4]
+    assert all(row["errors"] for row in body["rows"])
+
+    imported = upload_import(client, "guests.csv", csv_content, dry_run=False)
+    assert imported.status_code == 200
+    assert imported.json()["imported"] == 0
+    assert client.get("/api/guests").json() == []
+
+
+def test_xlsx_import(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["name", "category", "max_attendees"])
+    sheet.append(["Ayu", "Family", 2])
+    sheet.append(["Bima", None, 3])
+    buffer = BytesIO()
+    workbook.save(buffer)
+
+    response = upload_import(
+        client,
+        "guests.xlsx",
+        buffer.getvalue(),
+        dry_run=False,
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    assert response.status_code == 200
+    assert response.json()["imported"] == 2
+
+    guests = client.get("/api/guests").json()
+    assert [guest["name"] for guest in guests] == ["Ayu", "Bima"]
+    assert sum(guest["max_attendees"] for guest in guests) == 5
+
+
+def test_import_matches_existing_categories_case_insensitively(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    create_category(client, "Family")
+
+    csv_content = "name,category,max_attendees\nAyu,FAMILY,2\n"
+    response = upload_import(client, "guests.csv", csv_content, dry_run=False)
+    assert response.status_code == 200
+    assert response.json()["imported"] == 1
+
+    categories = client.get("/api/guest-categories").json()
+    assert [category["name"] for category in categories] == ["Family"]
+
+
+def test_import_skips_blank_rows_and_keeps_row_numbers(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+
+    csv_content = "name,category,max_attendees\nAyu,,1\n,,\nBima,,2\n"
+    preview = upload_import(client, "guests.csv", csv_content)
+    assert preview.status_code == 200
+    body = preview.json()
+    assert body["valid_count"] == 2
+    assert [row["row"] for row in body["rows"]] == [2, 4]
+
+
+def test_import_rejects_unsupported_files(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+
+    response = upload_import(
+        client, "guests.txt", "name\nAyu\n", content_type="text/plain"
+    )
+    assert response.status_code == 400
+
+
+def test_import_is_owner_scoped(client):
+    login_as(client, "first@example.com")
+    create_wedding(client)
+    upload_import(
+        client,
+        "guests.csv",
+        "name,category,max_attendees\nAyu,,1\n",
+        dry_run=False,
+    )
+    client.post("/api/auth/logout")
+
+    login_as(client, "second@example.com")
+    create_wedding(client)
+
+    assert client.get("/api/guests").json() == []
 
 
 def test_guests_are_scoped_to_the_owner(client):

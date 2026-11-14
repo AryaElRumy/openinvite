@@ -50,3 +50,20 @@ class GuestResponse(BaseModel):
     category_id: str | None
     invitation_code: str
     max_attendees: int
+
+
+class GuestImportRow(BaseModel):
+    row: int
+    name: str
+    category: str
+    max_attendees: int | None
+    valid: bool
+    errors: list[str]
+
+
+class GuestImportResult(BaseModel):
+    dry_run: bool
+    rows: list[GuestImportRow]
+    valid_count: int
+    invalid_count: int
+    imported: int

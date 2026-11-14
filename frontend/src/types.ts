@@ -78,3 +78,20 @@ export type GuestPayload = {
   category_id: string | null
   max_attendees: number
 }
+
+export type GuestImportRow = {
+  row: number
+  name: string
+  category: string
+  max_attendees: number | null
+  valid: boolean
+  errors: string[]
+}
+
+export type GuestImportResult = {
+  dry_run: boolean
+  rows: GuestImportRow[]
+  valid_count: number
+  invalid_count: number
+  imported: number
+}
