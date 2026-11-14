@@ -60,9 +60,18 @@ export type PublicInvitation = {
   invitation: Invitation
 }
 
+export type RsvpStatus = 'attending' | 'declined'
+
+export type Rsvp = {
+  status: RsvpStatus
+  attendee_count: number
+  responded_at: string
+}
+
 export type PublicGuest = {
   name: string
   max_attendees: number
+  rsvp: Rsvp | null
 }
 
 export type PublicGuestInvitation = PublicInvitation & {

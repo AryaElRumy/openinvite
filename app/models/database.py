@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from sqlalchemy import JSON, CheckConstraint, Column, UniqueConstraint
 from sqlmodel import Field
@@ -77,3 +77,16 @@ class Guest(BaseModel, table=True):
     invitation_code: str = Field(index=True, unique=True)
     max_attendees: int = Field(default=1)
     shared_at: datetime | None = None
+
+
+class Rsvp(BaseModel, table=True):
+    __tablename__ = "rsvps"
+    __table_args__ = (
+        CheckConstraint("status IN ('attending', 'declined')", name="ck_rsvps_status"),
+        CheckConstraint("attendee_count >= 0", name="ck_rsvps_attendee_count_positive"),
+    )
+
+    guest_id: str = Field(foreign_key="guests.id", index=True, unique=True)
+    status: str = "attending"
+    attendee_count: int = 1
+    responded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

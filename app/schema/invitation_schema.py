@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schema.rsvp_schema import RsvpResponse
 from app.schema.wedding_schema import URL_PATTERN, WeddingResponse
 
 
@@ -72,6 +73,7 @@ class PublicInvitationResponse(BaseModel):
 class PublicGuestResponse(BaseModel):
     name: str
     max_attendees: int
+    rsvp: RsvpResponse | None = None
 
 
 class PublicGuestInvitationResponse(PublicInvitationResponse):

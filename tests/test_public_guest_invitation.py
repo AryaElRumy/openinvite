@@ -58,7 +58,11 @@ def test_public_guest_invitation_returns_snapshot_and_guest(client):
     )
     assert response.status_code == 200
     body = response.json()
-    assert body["guest"] == {"name": "Ayu", "max_attendees": 2}
+    assert body["guest"] == {
+        "name": "Ayu",
+        "max_attendees": 2,
+        "rsvp": None,
+    }
     assert body["version"] == 1
     assert body["wedding"]["partner_one_name"] == "Ayu"
     assert body["invitation"]["message"] == INVITATION["message"]

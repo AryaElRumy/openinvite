@@ -455,6 +455,10 @@ input:disabled {
   }
 }
 
+.rsvp-card {
+  margin-top: 1.25rem;
+}
+
 .public-page {
   width: 100%;
   max-width: 40rem;
