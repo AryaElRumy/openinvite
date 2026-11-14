@@ -67,7 +67,11 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const location = useLocation()
 
   if (loading) {
-    return <p className="muted page">Loading…</p>
+    return (
+      <main className="flex min-h-dvh items-center justify-center text-muted-foreground">
+        Loading…
+      </main>
+    )
   }
   if (user === null) {
     return (

@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+
+import { AppTopBar, Page } from '@/components/Page'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { ApiError, api } from '../api'
-import { useAuth } from '../auth'
 import InvitationTemplate from '../components/InvitationTemplate'
 import type { InvitationPreview } from '../types'
 
 export default function PreviewPage() {
-  const { logout } = useAuth()
   const [preview, setPreview] = useState<InvitationPreview | null>(null)
   const [loading, setLoading] = useState(true)
   const [needsWedding, setNeedsWedding] = useState(false)
@@ -38,30 +46,33 @@ export default function PreviewPage() {
   }, [])
 
   return (
-    <main className="preview-page">
-      <header className="topbar">
-        <strong>Preview</strong>
-        <nav className="topbar-actions">
-          <Link className="link" to="/editor">
-            Edit
-          </Link>
-          <Link className="link" to="/">
-            Dashboard
-          </Link>
-          <button className="link" type="button" onClick={() => void logout()}>
-            Sign out
-          </button>
-        </nav>
-      </header>
+    <Page>
+      <AppTopBar active="preview" />
+
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle className="font-serif text-2xl">Preview</CardTitle>
+          <CardDescription>
+            The saved draft, exactly as guests will see it.
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
       {loading ? (
-        <p>Loading…</p>
+        <p className="text-muted-foreground">Loading…</p>
       ) : needsWedding ? (
-        <p>
-          Set up your wedding first. <Link to="/">Go to dashboard</Link>
-        </p>
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-4">
+            <p className="text-sm">Set up your wedding first.</p>
+            <Button asChild size="sm">
+              <Link to="/">Go to dashboard</Link>
+            </Button>
+          </CardContent>
+        </Card>
       ) : error !== '' ? (
-        <p className="error">{error}</p>
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
       ) : (
         preview && (
           <InvitationTemplate
@@ -70,6 +81,6 @@ export default function PreviewPage() {
           />
         )
       )}
-    </main>
+    </Page>
   )
 }

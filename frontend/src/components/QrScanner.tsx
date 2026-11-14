@@ -1,17 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Html5Qrcode } from 'html5-qrcode'
 
 type Props = {
   onScan: (text: string) => void
 }
 
-const CONTAINER_ID = 'qr-reader'
-
 export default function QrScanner({ onScan }: Props) {
   const [error, setError] = useState('')
+  const containerId = `qr-reader-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
 
   useEffect(() => {
-    const scanner = new Html5Qrcode(CONTAINER_ID)
+    const scanner = new Html5Qrcode(containerId)
     let active = true
 
     scanner
@@ -44,12 +43,12 @@ export default function QrScanner({ onScan }: Props) {
         // Scanner may not have initialized.
       }
     }
-  }, [onScan])
+  }, [containerId, onScan])
 
   return (
-    <div className="qr-scanner">
-      <div id={CONTAINER_ID} />
-      {error !== '' && <p className="error">{error}</p>}
+    <div className="flex flex-col gap-3">
+      <div id={containerId} className="overflow-hidden rounded-xl" />
+      {error !== '' && <p className="text-sm text-destructive">{error}</p>}
     </div>
   )
 }

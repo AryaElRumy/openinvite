@@ -1,8 +1,28 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+
+import { AppTopBar, Page } from '@/components/Page'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { ApiError, api } from '../api'
-import { useAuth } from '../auth'
 import type { Invitation } from '../types'
 
 type FormState = {
@@ -56,7 +76,6 @@ function toMeta(invitation: Invitation): Meta {
 }
 
 export default function InvitationEditorPage() {
-  const { logout } = useAuth()
   const [form, setForm] = useState<FormState>(emptyForm)
   const [meta, setMeta] = useState<Meta>(emptyMeta)
   const [loading, setLoading] = useState(true)
@@ -197,156 +216,194 @@ export default function InvitationEditorPage() {
   }
 
   return (
-    <main className="page">
-      <header className="topbar">
-        <strong>OpenInvite</strong>
-        <nav className="topbar-actions">
-          <Link className="link" to="/">
-            Dashboard
-          </Link>
-          <Link className="link" to="/preview">
-            Preview
-          </Link>
-          <button className="link" type="button" onClick={() => void logout()}>
-            Sign out
-          </button>
-        </nav>
-      </header>
+    <Page>
+      <AppTopBar active="editor" />
 
-      <section className="card">
-        <h1>Invitation draft</h1>
-
-        {loading ? (
-          <p>Loading…</p>
-        ) : needsWedding ? (
-          <p>
-            Set up your wedding first. <Link to="/">Go to dashboard</Link>
-          </p>
-        ) : (
-          <form className="form" onSubmit={handleSubmit}>
-            <p className={meta.publishedAt ? 'success' : 'muted'}>
-              {meta.publishedAt
-                ? `Published (v${meta.version}).`
-                : 'Draft — not visible to guests.'}
-            </p>
-            {meta.publishedAt && meta.slug && (
-              <p className="muted">
-                Public link:{' '}
-                <Link
-                  to={`/i/${meta.slug}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  /i/{meta.slug}
-                </Link>
-              </p>
-            )}
-
-            <label className="field">
-              <span>Template</span>
-              <select value="classic" disabled>
-                <option value="classic">Classic</option>
-              </select>
-            </label>
-
-            <label className="field">
-              <span>Headline</span>
-              <input
-                maxLength={120}
-                placeholder="Ayu & Bima"
-                value={form.headline}
-                onChange={(event) =>
-                  updateField('headline', event.target.value)
-                }
-              />
-            </label>
-
-            <label className="field">
-              <span>Message</span>
-              <textarea
-                rows={6}
-                maxLength={4000}
-                placeholder="Share your story or a note for your guests."
-                value={form.message}
-                onChange={(event) => updateField('message', event.target.value)}
-              />
-            </label>
-
-            <label className="field">
-              <span>Quote</span>
-              <input
-                maxLength={500}
-                value={form.quote}
-                onChange={(event) => updateField('quote', event.target.value)}
-              />
-            </label>
-
-            <label className="field">
-              <span>Cover image URL</span>
-              <input
-                type="url"
-                maxLength={500}
-                placeholder="https://..."
-                value={form.cover_image_url}
-                onChange={(event) =>
-                  updateField('cover_image_url', event.target.value)
-                }
-              />
-            </label>
-
-            <label className="field">
-              <span>Gallery image URLs</span>
-              <textarea
-                rows={4}
-                placeholder={'One URL per line\nhttps://...'}
-                value={form.gallery}
-                onChange={(event) => updateField('gallery', event.target.value)}
-              />
-              <small className="muted">One image URL per line.</small>
-            </label>
-
-            <label className="field">
-              <span>Closing message</span>
-              <input
-                maxLength={500}
-                placeholder="With love, Ayu & Bima"
-                value={form.closing_message}
-                onChange={(event) =>
-                  updateField('closing_message', event.target.value)
-                }
-              />
-            </label>
-
-            {error !== '' && <p className="error">{error}</p>}
-            {notice !== '' && <p className="success">{notice}</p>}
-
-            <div className="actions">
-              <button className="button" type="submit" disabled={saving}>
-                {saving ? 'Saving…' : 'Save draft'}
-              </button>
-              {meta.publishedAt ? (
-                <button
-                  className="button secondary"
-                  type="button"
-                  disabled={saving}
-                  onClick={() => void handleUnpublish()}
-                >
-                  Unpublish
-                </button>
-              ) : (
-                <button
-                  className="button secondary"
-                  type="button"
-                  disabled={saving}
-                  onClick={() => void handlePublish()}
-                >
-                  Publish
-                </button>
-              )}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="font-serif text-2xl">
+                Invitation draft
+              </CardTitle>
+              <CardDescription>
+                Save your content, then publish when it is ready.
+              </CardDescription>
             </div>
-          </form>
-        )}
-      </section>
-    </main>
+            <Badge variant={meta.publishedAt ? 'default' : 'secondary'}>
+              {meta.publishedAt
+                ? `Published (v${meta.version})`
+                : 'Draft'}
+            </Badge>
+          </div>
+          {meta.publishedAt && meta.slug && (
+            <p className="text-sm text-muted-foreground">
+              Public link:{' '}
+              <Link
+                to={`/i/${meta.slug}`}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
+                /i/{meta.slug}
+              </Link>
+            </p>
+          )}
+        </CardHeader>
+
+        <CardContent>
+          {loading ? (
+            <p className="text-muted-foreground">Loading…</p>
+          ) : needsWedding ? (
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <p className="text-sm">
+                Set up your wedding first.
+              </p>
+              <Button asChild size="sm">
+                <Link to="/">Go to dashboard</Link>
+              </Button>
+            </div>
+          ) : (
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div className="space-y-2">
+                <Label htmlFor="template">Template</Label>
+                <Select value="classic" disabled>
+                  <SelectTrigger id="template" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="classic">Classic</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="headline">Headline</Label>
+                  <Input
+                    id="headline"
+                    maxLength={120}
+                    placeholder="Ayu & Bima"
+                    value={form.headline}
+                    onChange={(event) =>
+                      updateField('headline', event.target.value)
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="quote">Quote</Label>
+                  <Input
+                    id="quote"
+                    maxLength={500}
+                    value={form.quote}
+                    onChange={(event) =>
+                      updateField('quote', event.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="message">Message</Label>
+                <Textarea
+                  id="message"
+                  rows={6}
+                  maxLength={4000}
+                  placeholder="Share your story or a note for your guests."
+                  value={form.message}
+                  onChange={(event) => updateField('message', event.target.value)}
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="cover_image_url">Cover image URL</Label>
+                  <Input
+                    id="cover_image_url"
+                    type="url"
+                    maxLength={500}
+                    placeholder="https://..."
+                    value={form.cover_image_url}
+                    onChange={(event) =>
+                      updateField('cover_image_url', event.target.value)
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="closing_message">Closing message</Label>
+                  <Input
+                    id="closing_message"
+                    maxLength={500}
+                    placeholder="With love, Ayu & Bima"
+                    value={form.closing_message}
+                    onChange={(event) =>
+                      updateField('closing_message', event.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gallery">Gallery image URLs</Label>
+                <Textarea
+                  id="gallery"
+                  rows={4}
+                  placeholder={'One URL per line\nhttps://...'}
+                  value={form.gallery}
+                  onChange={(event) => updateField('gallery', event.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  One image URL per line.
+                </p>
+              </div>
+
+              {error !== '' && (
+                <p
+                  role="alert"
+                  className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                >
+                  {error}
+                </p>
+              )}
+              {notice !== '' && (
+                <p
+                  role="status"
+                  className="rounded-md bg-accent/15 px-3 py-2 text-sm text-foreground"
+                >
+                  {notice}
+                </p>
+              )}
+
+              <div className="flex flex-wrap gap-3">
+                <Button type="submit" disabled={saving}>
+                  {saving ? 'Saving…' : 'Save draft'}
+                </Button>
+                {meta.publishedAt ? (
+                  <Button
+                    variant="outline"
+                    type="button"
+                    disabled={saving}
+                    onClick={() => void handleUnpublish()}
+                  >
+                    Unpublish
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    disabled={saving}
+                    onClick={() => void handlePublish()}
+                  >
+                    Publish
+                  </Button>
+                )}
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+    </Page>
   )
 }

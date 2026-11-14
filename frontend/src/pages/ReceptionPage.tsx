@@ -1,5 +1,18 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+
+import { Page } from '@/components/Page'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ApiError, api } from '../api'
 import type {
   CheckInResponse,
@@ -120,11 +133,14 @@ export default function ReceptionPage() {
 
   if (!token) {
     return (
-      <main className="page">
-        <section className="card">
-          <p>This reception link is invalid.</p>
-        </section>
-      </main>
+      <Page>
+        <Card>
+          <CardHeader>
+            <CardTitle>Guest Reception</CardTitle>
+            <CardDescription>This reception link is invalid.</CardDescription>
+          </CardHeader>
+        </Card>
+      </Page>
     )
   }
 
@@ -137,139 +153,167 @@ export default function ReceptionPage() {
   )
 
   return (
-    <main className="page">
-      <header className="topbar">
-        <strong>Guest Reception</strong>
+    <Page>
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <span className="font-semibold tracking-tight">Guest Reception</span>
+        <span className="text-sm text-muted-foreground">
+          Restricted event-day access
+        </span>
       </header>
 
-      <section className="card">
+      <Card>
         {loading ? (
-          <p>Loading…</p>
+          <CardContent>
+            <p className="text-muted-foreground">Loading…</p>
+          </CardContent>
         ) : invalid || wedding === null ? (
-          <p>
-            This reception link is invalid or has been revoked. Ask the couple
-            for a new link.
-          </p>
+          <CardHeader>
+            <CardTitle>Access unavailable</CardTitle>
+            <CardDescription>
+              This reception link is invalid or has been revoked. Ask the couple
+              for a new link.
+            </CardDescription>
+          </CardHeader>
         ) : (
           <>
-            <h1>
-              {wedding.partner_one_name} & {wedding.partner_two_name}
-            </h1>
-            <p className="muted">
-              {formatDate(wedding.wedding_date)} · {wedding.venue_name}
-            </p>
+            <CardHeader>
+              <CardTitle className="font-serif text-2xl">
+                {wedding.partner_one_name} & {wedding.partner_two_name}
+              </CardTitle>
+              <CardDescription>
+                {formatDate(wedding.wedding_date)} · {wedding.venue_name}
+              </CardDescription>
+            </CardHeader>
 
-            <div className="actions">
-              <button
-                className="button"
-                type="button"
-                disabled={scanning}
-                onClick={() => {
-                  setScanning(true)
-                  setScanError('')
-                  setScanResult(null)
-                }}
-              >
-                Scan QR
-              </button>
-            </div>
-
-            {scanning && (
-              <>
-                <Suspense fallback={<p className="muted">Starting camera…</p>}>
-                  <QrScanner onScan={handleScan} />
-                </Suspense>
-                <button
-                  className="button secondary"
+            <CardContent className="space-y-5">
+              <div className="flex flex-wrap gap-3">
+                <Button
                   type="button"
-                  onClick={() => setScanning(false)}
+                  disabled={scanning}
+                  onClick={() => {
+                    setScanning(true)
+                    setScanError('')
+                    setScanResult(null)
+                  }}
                 >
-                  Close scanner
-                </button>
-              </>
-            )}
+                  Scan QR
+                </Button>
+              </div>
 
-            {scanResult && (
-              <p
-                className={
-                  scanResult.checked_in_at !== null ? 'muted' : 'success'
-                }
-              >
-                {scanResult.checked_in_at !== null
-                  ? `Already checked in at ${new Date(
-                      scanResult.checked_in_at,
-                    ).toLocaleString()}.`
-                  : `${scanResult.name} · up to ${scanResult.max_attendees} ${
-                      scanResult.max_attendees === 1 ? 'guest' : 'guests'
-                    }.`}
-              </p>
-            )}
-
-            {scanResult !== null &&
-              scanResult.checked_in_at === null &&
-              checkInResult === null && (
-                <div className="actions">
-                  <button
-                    className="button"
-                    type="button"
-                    disabled={checkingIn}
-                    onClick={() => void handleCheckIn()}
+              {scanning && (
+                <div className="space-y-3">
+                  <Suspense
+                    fallback={
+                      <p className="text-sm text-muted-foreground">
+                        Starting camera…
+                      </p>
+                    }
                   >
-                    {checkingIn ? 'Checking in…' : 'Check in'}
-                  </button>
+                    <QrScanner onScan={handleScan} />
+                  </Suspense>
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => setScanning(false)}
+                  >
+                    Close scanner
+                  </Button>
                 </div>
               )}
 
-            {checkInResult !== null && (
-              <p className="success">
-                {checkInResult.already_checked_in
-                  ? 'Already checked in'
-                  : 'Checked in'}{' '}
-                at {new Date(checkInResult.checked_in_at).toLocaleString()}.
-              </p>
-            )}
+              {scanResult && (
+                <div className="rounded-xl border bg-muted/30 p-4">
+                  <p className="text-sm font-medium">{scanResult.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Up to {scanResult.max_attendees}{' '}
+                    {scanResult.max_attendees === 1 ? 'guest' : 'guests'}
+                    {scanResult.checked_in_at
+                      ? ` · checked in ${new Date(scanResult.checked_in_at).toLocaleString()}`
+                      : ''}
+                  </p>
 
-            {checkInError !== '' && <p className="error">{checkInError}</p>}
-            {scanError !== '' && <p className="error">{scanError}</p>}
+                  {scanResult.checked_in_at === null && checkInResult === null && (
+                    <Button
+                      className="mt-3"
+                      type="button"
+                      disabled={checkingIn}
+                      onClick={() => void handleCheckIn()}
+                    >
+                      {checkingIn ? 'Checking in…' : 'Check in'}
+                    </Button>
+                  )}
 
-            <label className="field">
-              <span>Find a guest</span>
-              <input
-                type="search"
-                placeholder="Name or invitation code"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            </label>
+                  {checkInResult !== null && (
+                    <p className="mt-3 text-sm text-foreground">
+                      {checkInResult.already_checked_in
+                        ? 'Already checked in'
+                        : 'Checked in'}{' '}
+                      at {new Date(checkInResult.checked_in_at).toLocaleString()}.
+                    </p>
+                  )}
+                </div>
+              )}
 
-            {visibleGuests.length === 0 ? (
-              <p className="muted">No guests match.</p>
-            ) : (
-              <ul className="guest-list">
-                {visibleGuests.map((guest) => (
-                  <li className="guest-row" key={guest.id}>
-                    <div className="guest-row-info">
-                      <strong>{guest.name}</strong>
-                      <span className="muted">
-                        Up to {guest.max_attendees}{' '}
-                        {guest.max_attendees === 1 ? 'guest' : 'guests'} · Code{' '}
-                        {guest.invitation_code}
-                      </span>
-                      <span className="muted">
-                        {guest.checked_in_at !== null
-                          ? `Checked in ${new Date(
-                              guest.checked_in_at,
-                            ).toLocaleString()}`
-                          : 'Not checked in'}
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+              {scanError !== '' && (
+                <p
+                  role="alert"
+                  className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                >
+                  {scanError}
+                </p>
+              )}
+              {checkInError !== '' && (
+                <p
+                  role="alert"
+                  className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                >
+                  {checkInError}
+                </p>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="reception-search">Find a guest</Label>
+                <Input
+                  id="reception-search"
+                  type="search"
+                  placeholder="Name or invitation code"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
+
+              {visibleGuests.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No guests match.
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {visibleGuests.map((guest) => (
+                    <li
+                      key={guest.id}
+                      className="flex flex-col gap-2 rounded-2xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0 space-y-1">
+                        <p className="font-semibold break-words">{guest.name}</p>
+                        <p className="text-sm break-words text-muted-foreground">
+                          Up to {guest.max_attendees}{' '}
+                          {guest.max_attendees === 1 ? 'guest' : 'guests'} ·
+                          Code {guest.invitation_code}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={guest.checked_in_at ? 'default' : 'outline'}
+                      >
+                        {guest.checked_in_at ? 'Checked in' : 'Not checked in'}
+                      </Badge>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
           </>
         )}
-      </section>
-    </main>
+      </Card>
+    </Page>
   )
 }

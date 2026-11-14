@@ -1,20 +1,60 @@
 import { useEffect, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
+import { MoreHorizontal, Plus, Search, Settings2, Upload } from 'lucide-react'
 import { Link } from 'react-router-dom'
+
+import { AppTopBar, Page } from '@/components/Page'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { ApiError, api } from '../api'
-import { useAuth } from '../auth'
 import type {
   Guest,
   GuestCategory,
   GuestImportResult,
   GuestPayload,
-  ReceptionistTokenResponse,
-  ReceptionistTokenStatus,
   Wedding,
 } from '../types'
 
 export default function GuestsPage() {
-  const { logout } = useAuth()
   const [guests, setGuests] = useState<Guest[]>([])
   const [categories, setCategories] = useState<GuestCategory[]>([])
   const [wedding, setWedding] = useState<Wedding | null>(null)
@@ -34,6 +74,9 @@ export default function GuestsPage() {
   const [guestCategoryId, setGuestCategoryId] = useState('')
   const [guestMaxAttendees, setGuestMaxAttendees] = useState('1')
   const [editingGuestId, setEditingGuestId] = useState<string | null>(null)
+  const [guestFormOpen, setGuestFormOpen] = useState(false)
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false)
+  const [importModalOpen, setImportModalOpen] = useState(false)
 
   const [newCategoryName, setNewCategoryName] = useState('')
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
@@ -45,12 +88,6 @@ export default function GuestsPage() {
   )
   const [importCommitted, setImportCommitted] = useState(false)
 
-  const [receptionistActive, setReceptionistActive] = useState(false)
-  const [receptionistLastUsed, setReceptionistLastUsed] = useState<string | null>(
-    null,
-  )
-  const [receptionistToken, setReceptionistToken] = useState<string | null>(null)
-
   useEffect(() => {
     let cancelled = false
 
@@ -58,18 +95,12 @@ export default function GuestsPage() {
       api.get<Guest[]>('/guests'),
       api.get<GuestCategory[]>('/guest-categories'),
       api.get<Wedding>('/wedding'),
-      api.get<ReceptionistTokenStatus>('/receptionist').catch((err) => {
-        if (err instanceof ApiError && err.status === 404) return null
-        throw err
-      }),
     ])
-      .then(([guestData, categoryData, weddingData, receptionistData]) => {
+      .then(([guestData, categoryData, weddingData]) => {
         if (cancelled) return
         setGuests(guestData)
         setCategories(categoryData)
         setWedding(weddingData)
-        setReceptionistActive(receptionistData?.active ?? false)
-        setReceptionistLastUsed(receptionistData?.last_used_at ?? null)
       })
       .catch((err) => {
         if (cancelled) return
@@ -106,6 +137,7 @@ export default function GuestsPage() {
     setGuestMaxAttendees(String(guest.max_attendees))
     setError('')
     setNotice('')
+    setGuestFormOpen(true)
   }
 
   async function handleGuestSubmit(event: FormEvent) {
@@ -137,6 +169,7 @@ export default function GuestsPage() {
         setNotice('Guest updated.')
       }
       resetGuestForm()
+      setGuestFormOpen(false)
       reload()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to save guest')
@@ -175,9 +208,7 @@ export default function GuestsPage() {
       setNotice('Category added.')
       reload()
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Unable to add category',
-      )
+      setError(err instanceof ApiError ? err.message : 'Unable to add category')
     } finally {
       setSaving(false)
     }
@@ -205,17 +236,14 @@ export default function GuestsPage() {
     setSaving(true)
 
     try {
-      await api.put<GuestCategory>(
-        `/guest-categories/${editingCategoryId}`,
-        { name },
-      )
+      await api.put<GuestCategory>(`/guest-categories/${editingCategoryId}`, {
+        name,
+      })
       resetCategoryForm()
       setNotice('Category renamed.')
       reload()
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Unable to rename category',
-      )
+      setError(err instanceof ApiError ? err.message : 'Unable to rename category')
     } finally {
       setSaving(false)
     }
@@ -240,9 +268,7 @@ export default function GuestsPage() {
       setNotice('Category deleted.')
       reload()
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Unable to delete category',
-      )
+      setError(err instanceof ApiError ? err.message : 'Unable to delete category')
     }
   }
 
@@ -269,9 +295,7 @@ export default function GuestsPage() {
       setImportPreview(result)
       setImportCommitted(false)
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Unable to preview import',
-      )
+      setError(err instanceof ApiError ? err.message : 'Unable to preview import')
     } finally {
       setSaving(false)
     }
@@ -377,9 +401,7 @@ export default function GuestsPage() {
       setNotice('RSVP cleared.')
       reload()
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Unable to clear the RSVP.',
-      )
+      setError(err instanceof ApiError ? err.message : 'Unable to clear the RSVP.')
     }
   }
 
@@ -393,81 +415,7 @@ export default function GuestsPage() {
       setNotice('Check-in undone.')
       reload()
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : 'Unable to undo the check-in.',
-      )
-    }
-  }
-
-  async function handleCreateReceptionist() {
-    if (
-      receptionistActive &&
-      !window.confirm(
-        'Replace the current receptionist link? The old link will stop working.',
-      )
-    ) {
-      return
-    }
-
-    setError('')
-    setNotice('')
-    setSaving(true)
-
-    try {
-      const data = await api.post<ReceptionistTokenResponse>('/receptionist')
-      setReceptionistToken(data.token)
-      setReceptionistActive(true)
-      setReceptionistLastUsed(null)
-      setNotice(
-        'Receptionist link created. Copy it now; it will not be shown again.',
-      )
-      reload()
-    } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : 'Unable to create receptionist access.',
-      )
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function handleRevokeReceptionist() {
-    if (!window.confirm('Revoke receptionist access?')) return
-
-    setError('')
-    setNotice('')
-    setSaving(true)
-
-    try {
-      await api.delete('/receptionist')
-      setReceptionistToken(null)
-      setReceptionistActive(false)
-      setReceptionistLastUsed(null)
-      setNotice('Receptionist access revoked.')
-      reload()
-    } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : 'Unable to revoke receptionist access.',
-      )
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function handleCopyReceptionist() {
-    if (receptionistToken === null) return
-
-    try {
-      await navigator.clipboard.writeText(
-        `${window.location.origin}/reception/${receptionistToken}`,
-      )
-      setNotice('Receptionist link copied.')
-    } catch {
-      setError('Unable to copy the receptionist link.')
+      setError(err instanceof ApiError ? err.message : 'Unable to undo the check-in.')
     }
   }
 
@@ -483,20 +431,13 @@ export default function GuestsPage() {
     (total, guest) => total + guest.max_attendees,
     0,
   )
-  const sharedCount = guests.filter(
-    (guest) => guest.shared_at !== null,
-  ).length
-  const unsharedCount = guests.length - sharedCount
   const attendingCount = guests.filter(
     (guest) => guest.rsvp?.status === 'attending',
   ).length
-  const declinedCount = guests.filter(
-    (guest) => guest.rsvp?.status === 'declined',
-  ).length
-  const notRespondedCount = guests.length - attendingCount - declinedCount
   const checkedInCount = guests.filter(
     (guest) => guest.checked_in_at !== null,
   ).length
+
   const query = search.trim().toLowerCase()
   const visibleGuests = guests.filter(
     (guest) =>
@@ -513,487 +454,555 @@ export default function GuestsPage() {
   )
 
   return (
-    <main className="page">
-      <header className="topbar">
-        <strong>OpenInvite</strong>
-        <nav className="topbar-actions">
-          <Link className="link" to="/">
-            Dashboard
-          </Link>
-          <Link className="link" to="/editor">
-            Edit invitation
-          </Link>
-          <Link className="link" to="/preview">
-            Preview
-          </Link>
-          <button className="link" type="button" onClick={() => void logout()}>
-            Sign out
-          </button>
-        </nav>
-      </header>
+    <Page width="wide">
+      <AppTopBar active="guests" />
 
-      <section className="card">
-        <h1>Guests</h1>
-
-        {loading ? (
-          <p>Loading…</p>
-        ) : needsWedding ? (
-          <p>
-            Set up your wedding first. <Link to="/">Go to dashboard</Link>
-          </p>
-        ) : (
-          <>
-            <p className="muted">
-              {guests.length} invitation{guests.length === 1 ? '' : 's'} ·{' '}
-              {totalCapacity} attendee capacity · {sharedCount} shared ·{' '}
-              {unsharedCount} not shared
-            </p>
-            {guests.length > 0 && (
-              <p className="muted">
-                {attendingCount} attending · {declinedCount} declined ·{' '}
-                {notRespondedCount} not responded · {checkedInCount} checked in
-              </p>
-            )}
-
-            {error !== '' && <p className="error">{error}</p>}
-            {notice !== '' && <p className="success">{notice}</p>}
-
-            {guests.length > 0 && (
-              <p className="muted">
-                “Marked shared” is a manual record. It does not confirm
-                delivery or read.
-              </p>
-            )}
-
-            <div className="guest-toolbar">
-              <label className="field">
-                <span>Search guests</span>
-                <input
-                  type="search"
-                  placeholder="Name"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </label>
-
-              <label className="field">
-                <span>Filter by category</span>
-                <select
-                  value={categoryFilter}
-                  onChange={(event) => setCategoryFilter(event.target.value)}
-                >
-                  <option value="">All categories</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="field">
-                <span>Share status</span>
-                <select
-                  value={shareFilter}
-                  onChange={(event) => setShareFilter(event.target.value)}
-                >
-                  <option value="">All guests</option>
-                  <option value="shared">Marked shared</option>
-                  <option value="unshared">Not shared</option>
-                </select>
-              </label>
-
-              <label className="field">
-                <span>RSVP status</span>
-                <select
-                  value={rsvpFilter}
-                  onChange={(event) => setRsvpFilter(event.target.value)}
-                >
-                  <option value="">All RSVPs</option>
-                  <option value="attending">Attending</option>
-                  <option value="declined">Declined</option>
-                  <option value="none">Not responded</option>
-                </select>
-              </label>
+      <Card>
+        <CardHeader className="gap-4">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+            <div>
+              <CardTitle className="font-serif text-3xl">Guest list</CardTitle>
+              <CardDescription className="mt-2">
+                Find, filter, and keep track of everyone invited.
+              </CardDescription>
             </div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => setCategoryModalOpen(true)}>
+                <Settings2 data-icon="inline-start" />
+                Categories
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setImportModalOpen(true)}>
+                <Upload data-icon="inline-start" />
+                Import
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  resetGuestForm()
+                  setGuestFormOpen(true)
+                }}
+              >
+                <Plus data-icon="inline-start" />
+                Add guest
+              </Button>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <span>{guests.length} invited</span>
+            <span>{totalCapacity} attendee capacity</span>
+            <span>{attendingCount} attending</span>
+            <span>{checkedInCount} checked in</span>
+          </div>
+        </CardHeader>
 
-            <form className="form" onSubmit={handleGuestSubmit}>
-              <div className="grid">
-                <label className="field">
-                  <span>Guest name</span>
-                  <input
-                    required
-                    maxLength={120}
-                    placeholder="Ayu Lestari"
-                    value={guestName}
-                    onChange={(event) => setGuestName(event.target.value)}
-                  />
-                </label>
+        <CardContent className="space-y-6">
+          {loading ? (
+            <p className="text-muted-foreground">Loading…</p>
+          ) : needsWedding ? (
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <p className="text-sm">Set up your wedding first.</p>
+              <Button asChild size="sm">
+                <Link to="/">Go to dashboard</Link>
+              </Button>
+            </div>
+          ) : (
+            <>
+              {error !== '' && (
+                <p
+                  role="alert"
+                  className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                >
+                  {error}
+                </p>
+              )}
+              {notice !== '' && (
+                <p
+                  role="status"
+                  className="rounded-md bg-accent/15 px-3 py-2 text-sm text-foreground"
+                >
+                  {notice}
+                </p>
+              )}
 
-                <label className="field">
-                  <span>Category</span>
-                  <select
-                    value={guestCategoryId}
-                    onChange={(event) =>
-                      setGuestCategoryId(event.target.value)
+              {guests.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  “Marked shared” is a manual record. It does not confirm
+                  delivery or read.
+                </p>
+              )}
+
+              <div className="flex flex-col gap-3 rounded-xl bg-muted/45 p-3 lg:flex-row lg:items-end">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Label htmlFor="guest-search">Search guests</Label>
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="guest-search"
+                      type="search"
+                      className="pl-9"
+                      placeholder="Search by name"
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2 lg:w-48">
+                  <Label htmlFor="guest-category-filter">Category</Label>
+                  <Select
+                    value={categoryFilter || 'all'}
+                    onValueChange={(value) =>
+                      setCategoryFilter(value === 'all' ? '' : value)
                     }
                   >
-                    <option value="">Uncategorized</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    <SelectTrigger id="guest-category-filter" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All categories</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                <label className="field">
-                  <span>Max attendees</span>
-                  <input
-                    type="number"
-                    min={1}
-                    inputMode="numeric"
-                    value={guestMaxAttendees}
-                    onChange={(event) =>
-                      setGuestMaxAttendees(event.target.value)
+                <div className="space-y-2 lg:w-44">
+                  <Label htmlFor="guest-share-filter">Share status</Label>
+                  <Select
+                    value={shareFilter || 'all'}
+                    onValueChange={(value) =>
+                      setShareFilter(value === 'all' ? '' : value)
                     }
-                  />
-                </label>
+                  >
+                    <SelectTrigger id="guest-share-filter" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All guests</SelectItem>
+                      <SelectItem value="shared">Marked shared</SelectItem>
+                      <SelectItem value="unshared">Not shared</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2 lg:w-44">
+                  <Label htmlFor="guest-rsvp-filter">RSVP status</Label>
+                  <Select
+                    value={rsvpFilter || 'all'}
+                    onValueChange={(value) =>
+                      setRsvpFilter(value === 'all' ? '' : value)
+                    }
+                  >
+                    <SelectTrigger id="guest-rsvp-filter" className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All RSVPs</SelectItem>
+                      <SelectItem value="attending">Attending</SelectItem>
+                      <SelectItem value="declined">Declined</SelectItem>
+                      <SelectItem value="none">Not responded</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="actions">
-                <button className="button" type="submit" disabled={saving}>
-                  {editingGuestId === null ? 'Add guest' : 'Update guest'}
-                </button>
-                {editingGuestId !== null && (
-                  <button
-                    className="button secondary"
+              {visibleGuests.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {guests.length === 0
+                    ? 'No guests yet.'
+                    : 'No guests match your search.'}
+                </p>
+              ) : (
+                <ul className="space-y-3">
+                  {visibleGuests.map((guest) => (
+                    <li
+                      key={guest.id}
+                      className="flex flex-col gap-3 rounded-2xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0 space-y-1.5">
+                        <p className="font-semibold break-words">{guest.name}</p>
+                        <p className="text-sm break-words text-muted-foreground">
+                          {categoryName(guest.category_id)} ·{' '}
+                          {guest.max_attendees}{' '}
+                          {guest.max_attendees === 1 ? 'attendee' : 'attendees'}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Badge
+                            variant={guest.shared_at ? 'secondary' : 'outline'}
+                          >
+                            {guest.shared_at ? 'Marked shared' : 'Not shared'}
+                          </Badge>
+                          <Badge
+                            variant={
+                              guest.rsvp?.status === 'attending'
+                                ? 'default'
+                                : 'outline'
+                            }
+                          >
+                            {guest.rsvp === null
+                              ? 'Not responded'
+                              : guest.rsvp.status === 'attending'
+                                ? `Attending (${guest.rsvp.attendee_count})`
+                                : 'Declined'}
+                          </Badge>
+                          <Badge
+                            variant={guest.checked_in_at ? 'default' : 'outline'}
+                          >
+                            {guest.checked_in_at ? 'Checked in' : 'Not checked in'}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 sm:justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          onClick={() => void handleCopyLink(guest)}
+                        >
+                          Copy link
+                        </Button>
+                        <Button size="sm" asChild>
+                          <a
+                            href={`https://wa.me/?text=${encodeURIComponent(shareMessage(guest))}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => void handleShareGuest(guest)}
+                          >
+                            WhatsApp
+                          </a>
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`More actions for ${guest.name}`}
+                            >
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem
+                              onSelect={() => startEditGuest(guest)}
+                            >
+                              Edit
+                            </DropdownMenuItem>
+                            {guest.shared_at !== null && (
+                              <DropdownMenuItem
+                                onSelect={() => void handleUnshareGuest(guest)}
+                              >
+                                Undo share
+                              </DropdownMenuItem>
+                            )}
+                            {guest.rsvp !== null && (
+                              <DropdownMenuItem
+                                onSelect={() => void handleClearRsvp(guest)}
+                              >
+                                Clear RSVP
+                              </DropdownMenuItem>
+                            )}
+                            {guest.checked_in_at !== null && (
+                              <DropdownMenuItem
+                                onSelect={() => void handleUndoCheckIn(guest)}
+                              >
+                                Undo check-in
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onSelect={() => void handleDeleteGuest(guest)}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={guestFormOpen} onOpenChange={setGuestFormOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingGuestId === null ? 'Add a guest' : 'Edit guest'}
+            </DialogTitle>
+            <DialogDescription>
+              Set the invitation identity and the number of guests this invitation covers.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form className="flex flex-col gap-4" onSubmit={handleGuestSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="guest-name">Guest name</Label>
+              <Input
+                id="guest-name"
+                required
+                maxLength={120}
+                placeholder="Ayu Lestari"
+                value={guestName}
+                onChange={(event) => setGuestName(event.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="guest-category">Category</Label>
+                <Select
+                  value={guestCategoryId || 'none'}
+                  onValueChange={(value) =>
+                    setGuestCategoryId(value === 'none' ? '' : value)
+                  }
+                >
+                  <SelectTrigger id="guest-category" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Uncategorized</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="guest-max">Max attendees</Label>
+                <Input
+                  id="guest-max"
+                  type="number"
+                  min={1}
+                  inputMode="numeric"
+                  value={guestMaxAttendees}
+                  onChange={(event) => setGuestMaxAttendees(event.target.value)}
+                />
+              </div>
+            </div>
+
+            {error !== '' && (
+              <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {error}
+              </p>
+            )}
+
+            <DialogFooter>
+              <Button variant="ghost" type="button" onClick={() => setGuestFormOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Saving…' : editingGuestId === null ? 'Add guest' : 'Save changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {!loading && !needsWedding && (
+        <>
+          <Dialog open={categoryModalOpen} onOpenChange={setCategoryModalOpen}>
+            <DialogContent className="max-w-xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Settings2 className="size-4 text-muted-foreground" />
+                  Manage categories
+                </DialogTitle>
+                <DialogDescription>
+                  Organize guests into groups for easier filtering.
+                </DialogDescription>
+              </DialogHeader>
+            <CardContent className="space-y-4">
+              <form className="flex flex-wrap items-end gap-3" onSubmit={handleAddCategory}>
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Label htmlFor="new-category">New category</Label>
+                  <Input
+                    id="new-category"
+                    maxLength={80}
+                    placeholder="Family"
+                    value={newCategoryName}
+                    onChange={(event) => setNewCategoryName(event.target.value)}
+                  />
+                </div>
+                <Button type="submit" disabled={saving}>
+                  Add category
+                </Button>
+              </form>
+
+              {categories.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No categories yet.
+                </p>
+              ) : (
+                <ul className="space-y-1">
+                  {categories.map((category) => (
+                    <li
+                      key={category.id}
+                      className="flex flex-col gap-2 rounded-lg px-2 py-2 hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      {editingCategoryId === category.id ? (
+                        <form
+                          className="flex flex-1 flex-wrap items-center gap-2"
+                          onSubmit={handleRenameCategory}
+                        >
+                          <Input
+                            aria-label="Category name"
+                            maxLength={80}
+                            value={editCategoryName}
+                            onChange={(event) =>
+                              setEditCategoryName(event.target.value)
+                            }
+                          />
+                          <Button type="submit" size="sm" disabled={saving}>
+                            Save
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            type="button"
+                            onClick={resetCategoryForm}
+                          >
+                            Cancel
+                          </Button>
+                        </form>
+                      ) : (
+                        <>
+                          <span className="text-sm">{category.name}</span>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              type="button"
+                              onClick={() => startEditCategory(category)}
+                            >
+                              Rename
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              type="button"
+                              onClick={() => void handleDeleteCategory(category)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              </CardContent>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={importModalOpen} onOpenChange={setImportModalOpen}>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>Import guests</DialogTitle>
+                <DialogDescription>
+                  Upload a CSV or XLSX file with columns: name, category,
+                  max_attendees. Preview first; only valid rows are imported.
+                </DialogDescription>
+              </DialogHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="guest-import-file">Guest list file</Label>
+                <Input
+                  id="guest-import-file"
+                  type="file"
+                  accept=".csv,.xlsx"
+                  onChange={handleImportFileChange}
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  className="gap-2"
+                  disabled={importFile === null || saving || importCommitted}
+                  onClick={() => void handlePreviewImport()}
+                >
+                  <Upload data-icon="inline-start" />
+                  Preview import
+                </Button>
+                {importPreview !== null && !importCommitted && (
+                  <Button
+                    variant="secondary"
                     type="button"
-                    onClick={resetGuestForm}
+                    disabled={saving || importPreview.valid_count === 0}
+                    onClick={() => void handleConfirmImport()}
                   >
-                    Cancel
-                  </button>
+                    Import {importPreview.valid_count} guests
+                  </Button>
                 )}
               </div>
-            </form>
 
-            {visibleGuests.length === 0 ? (
-              <p className="muted">
-                {guests.length === 0
-                  ? 'No guests yet.'
-                  : 'No guests match your search.'}
-              </p>
-            ) : (
-              <ul className="guest-list">
-                {visibleGuests.map((guest) => (
-                  <li className="guest-row" key={guest.id}>
-                    <div className="guest-row-info">
-                      <strong>{guest.name}</strong>
-                      <span className="muted">
-                        {categoryName(guest.category_id)} ·{' '}
-                        {guest.max_attendees}{' '}
-                        {guest.max_attendees === 1 ? 'attendee' : 'attendees'} ·{' '}
-                        {guest.shared_at === null
-                          ? 'Not shared'
-                          : 'Marked shared'}
-                      </span>
-                      <span className="muted">
-                        RSVP:{' '}
-                        {guest.rsvp === null
-                          ? 'Not responded'
-                          : guest.rsvp.status === 'attending'
-                            ? `Attending (${guest.rsvp.attendee_count})`
-                            : 'Declined'}
-                        {guest.rsvp !== null &&
-                          ` · ${new Date(guest.rsvp.responded_at).toLocaleDateString()}`}
-                      </span>
-                      <span className="muted">
-                        Check-in:{' '}
-                        {guest.checked_in_at === null
-                          ? 'Not checked in'
-                          : `Checked in ${new Date(guest.checked_in_at).toLocaleString()}`}
-                      </span>
-                    </div>
-                    <div className="guest-row-actions">
-                      <button
-                        className="link"
-                        type="button"
-                        onClick={() => void handleCopyLink(guest)}
-                      >
-                        Copy link
-                      </button>
-                      <a
-                        className="link"
-                        href={`https://wa.me/?text=${encodeURIComponent(shareMessage(guest))}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={() => void handleShareGuest(guest)}
-                      >
-                        WhatsApp
-                      </a>
-                      {guest.shared_at !== null && (
-                        <button
-                          className="link"
-                          type="button"
-                          onClick={() => void handleUnshareGuest(guest)}
-                        >
-                          Undo
-                        </button>
-                      )}
-                      {guest.rsvp !== null && (
-                        <button
-                          className="link"
-                          type="button"
-                          onClick={() => void handleClearRsvp(guest)}
-                        >
-                          Clear RSVP
-                        </button>
-                      )}
-                      {guest.checked_in_at !== null && (
-                        <button
-                          className="link"
-                          type="button"
-                          onClick={() => void handleUndoCheckIn(guest)}
-                        >
-                          Undo check-in
-                        </button>
-                      )}
-                      <button
-                        className="link"
-                        type="button"
-                        onClick={() => startEditGuest(guest)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="link"
-                        type="button"
-                        onClick={() => void handleDeleteGuest(guest)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        )}
-      </section>
+              {importPreview !== null && (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    {importPreview.valid_count} valid ·{' '}
+                    {importPreview.invalid_count} invalid
+                    {importPreview.imported > 0
+                      ? ` · ${importPreview.imported} imported`
+                      : ''}
+                  </p>
 
-      {!loading && !needsWedding && (
-        <section className="card">
-          <h2>Categories</h2>
-
-          <form className="guest-toolbar" onSubmit={handleAddCategory}>
-            <label className="field">
-              <span>New category</span>
-              <input
-                maxLength={80}
-                placeholder="Family"
-                value={newCategoryName}
-                onChange={(event) => setNewCategoryName(event.target.value)}
-              />
-            </label>
-            <button className="button" type="submit" disabled={saving}>
-              Add category
-            </button>
-          </form>
-
-          {categories.length === 0 ? (
-            <p className="muted">No categories yet.</p>
-          ) : (
-            <ul className="category-list">
-              {categories.map((category) => (
-                <li className="category-row" key={category.id}>
-                  {editingCategoryId === category.id ? (
-                    <form
-                      className="category-inline-form"
-                      onSubmit={handleRenameCategory}
-                    >
-                      <input
-                        aria-label="Category name"
-                        maxLength={80}
-                        value={editCategoryName}
-                        onChange={(event) =>
-                          setEditCategoryName(event.target.value)
-                        }
-                      />
-                      <button className="button" type="submit" disabled={saving}>
-                        Save
-                      </button>
-                      <button
-                        className="button secondary"
-                        type="button"
-                        onClick={resetCategoryForm}
-                      >
-                        Cancel
-                      </button>
-                    </form>
+                  {importPreview.rows.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      The file has no guest rows.
+                    </p>
                   ) : (
-                    <>
-                      <span>{category.name}</span>
-                      <div className="guest-row-actions">
-                        <button
-                          className="link"
-                          type="button"
-                          onClick={() => startEditCategory(category)}
-                        >
-                          Rename
-                        </button>
-                        <button
-                          className="link"
-                          type="button"
-                          onClick={() => void handleDeleteCategory(category)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Row</TableHead>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Max</TableHead>
+                            <TableHead>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {importPreview.rows.map((row) => (
+                            <TableRow
+                              key={row.row}
+                              className={
+                                row.valid ? undefined : 'bg-destructive/10'
+                              }
+                            >
+                              <TableCell>{row.row}</TableCell>
+                              <TableCell>{row.name || '—'}</TableCell>
+                              <TableCell>{row.category || '—'}</TableCell>
+                              <TableCell>{row.max_attendees ?? '—'}</TableCell>
+                              <TableCell>
+                                {row.valid ? 'Ready' : row.errors.join('; ')}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
-
-      {!loading && !needsWedding && (
-        <section className="card">
-          <h2>Import guests</h2>
-          <p className="muted">
-            Upload a CSV or XLSX file with columns: name, category,
-            max_attendees. Preview first; only valid rows are imported.
-          </p>
-
-          <label className="field">
-            <span>Guest list file</span>
-            <input
-              type="file"
-              accept=".csv,.xlsx"
-              onChange={handleImportFileChange}
-            />
-          </label>
-
-          <div className="actions">
-            <button
-              className="button"
-              type="button"
-              disabled={importFile === null || saving || importCommitted}
-              onClick={() => void handlePreviewImport()}
-            >
-              Preview import
-            </button>
-            {importPreview !== null && !importCommitted && (
-              <button
-                className="button secondary"
-                type="button"
-                disabled={saving || importPreview.valid_count === 0}
-                onClick={() => void handleConfirmImport()}
-              >
-                Import {importPreview.valid_count} guests
-              </button>
-            )}
-          </div>
-
-          {importPreview !== null && (
-            <div className="import-preview">
-              <p className="muted">
-                {importPreview.valid_count} valid ·{' '}
-                {importPreview.invalid_count} invalid
-                {importPreview.imported > 0
-                  ? ` · ${importPreview.imported} imported`
-                  : ''}
-              </p>
-
-              {importPreview.rows.length === 0 ? (
-                <p className="muted">The file has no guest rows.</p>
-              ) : (
-                <div className="import-table">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Row</th>
-                        <th>Name</th>
-                        <th>Category</th>
-                        <th>Max</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {importPreview.rows.map((row) => (
-                        <tr
-                          key={row.row}
-                          className={
-                            row.valid ? undefined : 'import-row-invalid'
-                          }
-                        >
-                          <td>{row.row}</td>
-                          <td>{row.name === '' ? '—' : row.name}</td>
-                          <td>{row.category === '' ? '—' : row.category}</td>
-                          <td>{row.max_attendees ?? '—'}</td>
-                          <td>
-                            {row.valid ? 'Ready' : row.errors.join('; ')}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
               )}
-            </div>
-          )}
-        </section>
-      )}
+              </CardContent>
+            </DialogContent>
+          </Dialog>
 
-      {!loading && !needsWedding && (
-        <section className="card">
-          <h2>Receptionist access</h2>
-          <p className="muted">
-            {receptionistActive
-              ? 'Active. The link can view guest lookup and check-in only.'
-              : 'Not configured.'}
-          </p>
-          {receptionistLastUsed !== null && (
-            <p className="muted">
-              Last used {new Date(receptionistLastUsed).toLocaleString()}
-            </p>
-          )}
-          {receptionistToken !== null && (
-            <div className="slug-row">
-              <span className="muted">/reception/</span>
-              <input readOnly value={receptionistToken} />
-              <button
-                className="button secondary"
-                type="button"
-                onClick={() => void handleCopyReceptionist()}
-              >
-                Copy link
-              </button>
-            </div>
-          )}
-          <div className="actions">
-            <button
-              className="button"
-              type="button"
-              disabled={saving}
-              onClick={() => void handleCreateReceptionist()}
-            >
-              {receptionistActive ? 'Regenerate link' : 'Create link'}
-            </button>
-            {receptionistActive && (
-              <button
-                className="button secondary"
-                type="button"
-                disabled={saving}
-                onClick={() => void handleRevokeReceptionist()}
-              >
-                Revoke
-              </button>
-            )}
-          </div>
-        </section>
+        </>
       )}
-    </main>
+    </Page>
   )
 }

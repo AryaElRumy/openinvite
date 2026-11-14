@@ -1,6 +1,18 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Heart } from 'lucide-react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
+
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ApiError } from '../api'
 import { useAuth } from '../auth'
 
@@ -31,43 +43,71 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="auth-page">
-      <form className="card" onSubmit={handleSubmit}>
-        <h1>Sign in</h1>
-        <p className="muted">Manage your wedding invitation.</p>
+    <main className="grid min-h-dvh lg:grid-cols-[minmax(18rem,0.8fr)_minmax(24rem,1fr)]">
+      <aside className="hidden bg-foreground p-10 text-background lg:flex lg:flex-col lg:justify-between">
+        <div className="flex items-center gap-2 font-semibold"><Heart className="size-4 fill-primary text-primary" /> openinvite.</div>
+        <div><p className="app-kicker mb-4 text-primary">A little less to carry</p><p className="max-w-sm font-serif text-4xl leading-tight">The beautiful part is already on its way.</p></div>
+        <p className="text-sm text-background/60">Invitation planning, made personal.</p>
+      </aside>
+      <div className="flex items-center justify-center px-4 py-12">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <p className="app-kicker">Welcome back</p>
+          <CardTitle className="font-serif text-3xl">Sign in</CardTitle>
+          <CardDescription>Manage your wedding invitation.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </div>
 
-        <label className="field">
-          <span>Email</span>
-          <input
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-        </label>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </div>
 
-        <label className="field">
-          <span>Password</span>
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
+            {error !== '' && (
+              <p
+                role="alert"
+                className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                {error}
+              </p>
+            )}
 
-        {error !== '' && <p className="error">{error}</p>}
+            <Button type="submit" className="w-full" disabled={saving}>
+              {saving ? 'Signing in…' : 'Sign in'}
+            </Button>
+          </form>
 
-        <button className="button" type="submit" disabled={saving}>
-          {saving ? 'Signing in…' : 'Sign in'}
-        </button>
-
-        <p className="muted">
-          New here? <Link to="/register">Create an account</Link>
-        </p>
-      </form>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            New here?{' '}
+            <Link
+              to="/register"
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              Create an account
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
+      </div>
     </main>
   )
 }
