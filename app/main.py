@@ -8,6 +8,7 @@ from scalar_fastapi import get_scalar_api_reference
 
 from app.core.settings import settings
 from app.routers.auth_router import auth_router
+from app.routers.wedding_router import wedding_router
 
 app = FastAPI(
     title=settings.app_settings.APP_NAME, version=settings.app_settings.APP_VERSION
@@ -22,6 +23,7 @@ if os.path.isdir(public_path):
     app.mount("/public", StaticFiles(directory=public_path), name="public")
 
 app.include_router(auth_router)
+app.include_router(wedding_router)
 
 app.add_middleware(
     CORSMiddleware,
