@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { BookOpen, CalendarDays, Eye, Heart, LayoutDashboard, LogOut, Menu, Palette, Users, X } from 'lucide-react'
+import { BookOpen, CalendarDays, Heart, LayoutDashboard, LogOut, Menu, PenLine, Users, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
@@ -27,7 +27,7 @@ export function Page({
 export function AppTopBar({
   active,
 }: {
-  active: 'dashboard' | 'guests' | 'guestbook' | 'editor' | 'preview'
+  active: 'dashboard' | 'guests' | 'guestbook' | 'studio'
 }) {
   const { logout } = useAuth()
   const [open, setOpen] = useState(false)
@@ -48,8 +48,7 @@ const sidebarItems = [
   { label: 'Overview', href: '/', icon: LayoutDashboard, key: 'dashboard' },
   { label: 'Guest list', href: '/guests', icon: Users, key: 'guests' },
   { label: 'Guestbook', href: '/guestbook', icon: BookOpen, key: 'guestbook' },
-  { label: 'Design invitation', href: '/editor', icon: Palette, key: 'editor' },
-  { label: 'Preview', href: '/preview', icon: Eye, key: 'preview' },
+  { label: 'Invitation Studio', href: '/invitation-studio', icon: PenLine, key: 'studio' },
 ] as const
 
 function SidebarNavigation({
@@ -58,7 +57,7 @@ function SidebarNavigation({
   mobile = false,
   onNavigate,
 }: {
-  active: 'dashboard' | 'guests' | 'guestbook' | 'editor' | 'preview'
+  active: 'dashboard' | 'guests' | 'guestbook' | 'studio'
   logout: () => Promise<void>
   mobile?: boolean
   onNavigate?: () => void

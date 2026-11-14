@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { Eye, PenLine } from 'lucide-react'
 
 import { AppTopBar, Page } from '@/components/Page'
 import { Badge } from '@/components/ui/badge'
@@ -23,7 +24,8 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { ApiError, api } from '../api'
-import type { Invitation } from '../types'
+import InvitationTemplate from '../components/InvitationTemplate'
+import type { Invitation, InvitationPreview } from '../types'
 
 type FormState = {
   headline: string
@@ -75,14 +77,34 @@ function toMeta(invitation: Invitation): Meta {
   }
 }
 
-export default function InvitationEditorPage() {
+export default function InvitationEditorPage({
+  initialView = 'edit',
+}: {
+  initialView?: 'edit' | 'preview'
+}) {
   const [form, setForm] = useState<FormState>(emptyForm)
   const [meta, setMeta] = useState<Meta>(emptyMeta)
+  const [view, setView] = useState<'edit' | 'preview'>(initialView)
+  const [preview, setPreview] = useState<InvitationPreview | null>(null)
   const [loading, setLoading] = useState(true)
+  const [previewLoading, setPreviewLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [needsWedding, setNeedsWedding] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+
+  async function loadPreview() {
+    setPreviewLoading(true)
+    try {
+      setPreview(await api.get<InvitationPreview>('/invitation/preview'))
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Unable to load invitation preview',
+      )
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -112,6 +134,10 @@ export default function InvitationEditorPage() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    if (view === 'preview') void loadPreview()
+  }, [view])
 
   function updateField(field: keyof FormState, value: string) {
     setNotice('')
@@ -216,10 +242,45 @@ export default function InvitationEditorPage() {
   }
 
   return (
-    <Page>
-      <AppTopBar active="editor" />
+    <Page width="wide">
+      <AppTopBar active="studio" />
 
-      <Card>
+      <section className="mb-8 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+        <div>
+          <p className="app-kicker mb-3">Invitation Studio</p>
+          <h1 className="font-serif text-4xl sm:text-5xl">Shape the invitation guests will remember.</h1>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+            Edit your story, check the details, and preview the finished invitation in one place.
+          </p>
+        </div>
+        <div className="flex rounded-lg border bg-card p-1" role="tablist" aria-label="Invitation studio view">
+          <Button
+            type="button"
+            size="sm"
+            variant={view === 'edit' ? 'secondary' : 'ghost'}
+            role="tab"
+            aria-selected={view === 'edit'}
+            onClick={() => setView('edit')}
+          >
+            <PenLine data-icon="inline-start" />
+            Edit
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={view === 'preview' ? 'secondary' : 'ghost'}
+            role="tab"
+            aria-selected={view === 'preview'}
+            onClick={() => setView('preview')}
+          >
+            <Eye data-icon="inline-start" />
+            Preview
+          </Button>
+        </div>
+      </section>
+
+      {view === 'edit' ? (
+        <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -403,7 +464,38 @@ export default function InvitationEditorPage() {
             </form>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      ) : (
+        <section aria-label="Invitation preview">
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="font-serif text-2xl">Guest preview</CardTitle>
+                  <CardDescription>The saved draft, exactly as guests will see it.</CardDescription>
+                </div>
+                <Badge variant={meta.publishedAt ? 'default' : 'secondary'}>
+                  {meta.publishedAt ? 'Published' : 'Draft'}
+                </Badge>
+              </div>
+            </CardHeader>
+          </Card>
+          {previewLoading ? (
+            <p className="text-muted-foreground">Loading preview…</p>
+          ) : preview ? (
+            <InvitationTemplate wedding={preview.wedding} invitation={preview.invitation} />
+          ) : (
+            <Card>
+              <CardContent className="flex flex-wrap items-center justify-between gap-4">
+                <p className="text-sm">Set up your wedding before previewing the invitation.</p>
+                <Button asChild size="sm">
+                  <Link to="/">Go to dashboard</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </section>
+      )}
     </Page>
   )
 }

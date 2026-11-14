@@ -5,7 +5,6 @@ import GuestsPage from './pages/GuestsPage'
 import GuestbookPage from './pages/GuestbookPage'
 import InvitationEditorPage from './pages/InvitationEditorPage'
 import LoginPage from './pages/LoginPage'
-import PreviewPage from './pages/PreviewPage'
 import PublicInvitationPage from './pages/PublicInvitationPage'
 import ReceptionPage from './pages/ReceptionPage'
 import RegisterPage from './pages/RegisterPage'
@@ -26,7 +25,7 @@ export default function App() {
             }
           />
           <Route
-            path="/editor"
+            path="/invitation-studio"
             element={
               <RequireAuth>
                 <InvitationEditorPage />
@@ -34,10 +33,18 @@ export default function App() {
             }
           />
           <Route
+            path="/editor"
+            element={
+              <RequireAuth>
+                <InvitationEditorPage initialView="edit" />
+              </RequireAuth>
+            }
+          />
+          <Route
             path="/preview"
             element={
               <RequireAuth>
-                <PreviewPage />
+                <InvitationEditorPage initialView="preview" />
               </RequireAuth>
             }
           />

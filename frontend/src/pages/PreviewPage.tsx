@@ -47,7 +47,7 @@ export default function PreviewPage() {
 
   return (
     <Page>
-      <AppTopBar active="preview" />
+      <AppTopBar active="studio" />
 
       <Card className="mb-4">
         <CardHeader>
