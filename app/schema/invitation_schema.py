@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.schema.wedding_schema import URL_PATTERN
+from app.schema.wedding_schema import URL_PATTERN, WeddingResponse
 
 
 def _clean_url(value: str | None) -> str | None:
@@ -51,3 +51,8 @@ class InvitationResponse(BaseModel):
     cover_image_url: str | None = None
     gallery_image_urls: list[str] = Field(default_factory=list)
     closing_message: str | None = None
+
+
+class InvitationPreview(BaseModel):
+    wedding: WeddingResponse
+    invitation: InvitationResponse

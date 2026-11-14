@@ -120,6 +120,9 @@ export default function InvitationEditorPage() {
           <Link className="link" to="/">
             Dashboard
           </Link>
+          <Link className="link" to="/preview">
+            Preview
+          </Link>
           <button className="link" type="button" onClick={() => void logout()}>
             Sign out
           </button>

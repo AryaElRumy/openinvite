@@ -107,6 +107,34 @@ def test_url_fields_accept_only_http_or_empty(client):
     assert empty.json()["gallery_image_urls"] == ["https://img.example.com/1.jpg"]
 
 
+def test_preview_requires_authentication(client):
+    assert client.get("/api/invitation/preview").status_code == 401
+
+
+def test_preview_requires_a_wedding(client):
+    login_as(client, "couple@example.com")
+
+    assert client.get("/api/invitation/preview").status_code == 404
+
+
+def test_preview_assembles_wedding_and_saved_draft(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+
+    default_preview = client.get("/api/invitation/preview")
+    assert default_preview.status_code == 200
+    assert default_preview.json()["wedding"]["slug"] == "ayu-bima"
+    assert default_preview.json()["invitation"]["headline"] == "Ayu & Bima"
+
+    client.put("/api/invitation", json=INVITATION)
+    preview = client.get("/api/invitation/preview")
+    assert preview.status_code == 200
+    body = preview.json()
+    assert body["wedding"]["partner_one_name"] == "Ayu"
+    assert body["invitation"]["message"] == INVITATION["message"]
+    assert body["invitation"]["gallery_image_urls"] == INVITATION["gallery_image_urls"]
+
+
 def test_unknown_template_is_rejected(client):
     login_as(client, "couple@example.com")
     create_wedding(client)

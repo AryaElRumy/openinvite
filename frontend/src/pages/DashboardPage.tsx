@@ -178,6 +178,9 @@ export default function DashboardPage() {
           <Link className="link" to="/editor">
             Edit invitation
           </Link>
+          <Link className="link" to="/preview">
+            Preview
+          </Link>
           <button className="link" type="button" onClick={() => void logout()}>
             Sign out
           </button>

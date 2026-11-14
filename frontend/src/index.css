@@ -232,3 +232,125 @@ a:focus-visible {
 input:disabled {
   opacity: 0.6;
 }
+
+.preview-page {
+  width: min(100% - 2rem, 40rem);
+  margin: 0 auto;
+  padding: 1.5rem 0 3rem;
+}
+
+.invitation {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.invitation-cover {
+  display: block;
+  width: 100%;
+  max-height: 24rem;
+  object-fit: cover;
+}
+
+.invitation-hero {
+  padding: 2rem 1.5rem 1rem;
+  text-align: center;
+}
+
+.invitation-kicker {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.invitation-hero h1 {
+  margin: 0.35rem 0;
+  font-size: clamp(2rem, 8vw, 3rem);
+}
+
+.invitation-date {
+  color: var(--muted);
+}
+
+.invitation-quote {
+  margin: 0 1.5rem;
+  padding: 1rem;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+  font-style: italic;
+}
+
+.invitation-message {
+  padding: 0 1.5rem;
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.invitation-section {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.invitation-section h2 {
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.invitation-events {
+  display: grid;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.invitation-events li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.invitation-events span {
+  color: var(--muted);
+}
+
+.invitation-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+}
+
+.invitation-gallery img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.invitation-closing {
+  padding: 1.5rem;
+  text-align: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 380px) {
+  .preview-page {
+    width: min(100% - 1rem, 40rem);
+  }
+
+  .invitation-hero,
+  .invitation-section,
+  .invitation-message {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .invitation-gallery {
+    grid-template-columns: 1fr;
+  }
+}

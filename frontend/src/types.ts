@@ -44,3 +44,8 @@ export type Invitation = {
   gallery_image_urls: string[]
   closing_message: string | null
 }
+
+export type InvitationPreview = {
+  wedding: Wedding
+  invitation: Invitation
+}

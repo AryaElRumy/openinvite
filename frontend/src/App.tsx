@@ -3,6 +3,7 @@ import { AuthProvider, RequireAuth } from './auth'
 import DashboardPage from './pages/DashboardPage'
 import InvitationEditorPage from './pages/InvitationEditorPage'
 import LoginPage from './pages/LoginPage'
+import PreviewPage from './pages/PreviewPage'
 import RegisterPage from './pages/RegisterPage'
 
 export default function App() {
@@ -25,6 +26,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <InvitationEditorPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/preview"
+            element={
+              <RequireAuth>
+                <PreviewPage />
               </RequireAuth>
             }
           />
