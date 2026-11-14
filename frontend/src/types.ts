@@ -43,9 +43,19 @@ export type Invitation = {
   cover_image_url: string | null
   gallery_image_urls: string[]
   closing_message: string | null
+  slug: string | null
+  version: number
+  published_at: string | null
 }
 
 export type InvitationPreview = {
+  wedding: Wedding
+  invitation: Invitation
+}
+
+export type PublicInvitation = {
+  version: number
+  published_at: string
   wedding: Wedding
   invitation: Invitation
 }

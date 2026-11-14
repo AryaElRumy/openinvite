@@ -14,6 +14,14 @@ type FormState = {
   closing_message: string
 }
 
+type Meta = {
+  slug: string | null
+  version: number
+  publishedAt: string | null
+}
+
+const emptyMeta: Meta = { slug: null, version: 0, publishedAt: null }
+
 const emptyForm = (): FormState => ({
   headline: '',
   message: '',
@@ -39,14 +47,23 @@ function nullIfEmpty(value: string): string | null {
   return trimmed === '' ? null : trimmed
 }
 
+function toMeta(invitation: Invitation): Meta {
+  return {
+    slug: invitation.slug,
+    version: invitation.version,
+    publishedAt: invitation.published_at,
+  }
+}
+
 export default function InvitationEditorPage() {
   const { logout } = useAuth()
   const [form, setForm] = useState<FormState>(emptyForm)
+  const [meta, setMeta] = useState<Meta>(emptyMeta)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [needsWedding, setNeedsWedding] = useState(false)
   const [error, setError] = useState('')
-  const [saved, setSaved] = useState(false)
+  const [notice, setNotice] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -54,7 +71,9 @@ export default function InvitationEditorPage() {
     api
       .get<Invitation>('/invitation')
       .then((invitation) => {
-        if (!cancelled) setForm(toForm(invitation))
+        if (cancelled) return
+        setForm(toForm(invitation))
+        setMeta(toMeta(invitation))
       })
       .catch((err) => {
         if (cancelled) return
@@ -76,16 +95,11 @@ export default function InvitationEditorPage() {
   }, [])
 
   function updateField(field: keyof FormState, value: string) {
-    setSaved(false)
+    setNotice('')
     setForm((current) => ({ ...current, [field]: value }))
   }
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault()
-    setError('')
-    setSaved(false)
-    setSaving(true)
-
+  async function saveDraft(): Promise<Invitation> {
     const payload = {
       template_id: 'classic',
       headline: form.headline.trim(),
@@ -99,13 +113,83 @@ export default function InvitationEditorPage() {
       closing_message: nullIfEmpty(form.closing_message),
     }
 
+    const invitation = await api.put<Invitation>('/invitation', payload)
+    setForm(toForm(invitation))
+    setMeta(toMeta(invitation))
+    return invitation
+  }
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    setError('')
+    setNotice('')
+    setSaving(true)
+
     try {
-      const invitation = await api.put<Invitation>('/invitation', payload)
-      setForm(toForm(invitation))
-      setSaved(true)
+      const invitation = await saveDraft()
+      setNotice(
+        invitation.published_at
+          ? 'Draft saved. Publish again to update the public page.'
+          : 'Draft saved.',
+      )
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : 'Unable to save invitation',
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handlePublish() {
+    if (
+      !window.confirm(
+        'Publish this invitation? Your public page will go live with the saved draft.',
+      )
+    ) {
+      return
+    }
+
+    setError('')
+    setNotice('')
+    setSaving(true)
+
+    try {
+      await saveDraft()
+      const invitation = await api.post<Invitation>('/invitation/publish')
+      setForm(toForm(invitation))
+      setMeta(toMeta(invitation))
+      setNotice('Invitation published.')
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Unable to publish invitation',
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleUnpublish() {
+    if (
+      !window.confirm(
+        'Unpublish this invitation? The public page will stop working.',
+      )
+    ) {
+      return
+    }
+
+    setError('')
+    setNotice('')
+    setSaving(true)
+
+    try {
+      const invitation = await api.post<Invitation>('/invitation/unpublish')
+      setForm(toForm(invitation))
+      setMeta(toMeta(invitation))
+      setNotice('Invitation unpublished.')
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Unable to unpublish invitation',
       )
     } finally {
       setSaving(false)
@@ -140,6 +224,24 @@ export default function InvitationEditorPage() {
           </p>
         ) : (
           <form className="form" onSubmit={handleSubmit}>
+            <p className={meta.publishedAt ? 'success' : 'muted'}>
+              {meta.publishedAt
+                ? `Published (v${meta.version}).`
+                : 'Draft — not visible to guests.'}
+            </p>
+            {meta.publishedAt && meta.slug && (
+              <p className="muted">
+                Public link:{' '}
+                <Link
+                  to={`/i/${meta.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  /i/{meta.slug}
+                </Link>
+              </p>
+            )}
+
             <label className="field">
               <span>Template</span>
               <select value="classic" disabled>
@@ -216,12 +318,31 @@ export default function InvitationEditorPage() {
             </label>
 
             {error !== '' && <p className="error">{error}</p>}
-            {saved && <p className="success">Draft saved.</p>}
+            {notice !== '' && <p className="success">{notice}</p>}
 
             <div className="actions">
               <button className="button" type="submit" disabled={saving}>
                 {saving ? 'Saving…' : 'Save draft'}
               </button>
+              {meta.publishedAt ? (
+                <button
+                  className="button secondary"
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void handleUnpublish()}
+                >
+                  Unpublish
+                </button>
+              ) : (
+                <button
+                  className="button secondary"
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void handlePublish()}
+                >
+                  Publish
+                </button>
+              )}
             </div>
           </form>
         )}

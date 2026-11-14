@@ -4,6 +4,7 @@ import DashboardPage from './pages/DashboardPage'
 import InvitationEditorPage from './pages/InvitationEditorPage'
 import LoginPage from './pages/LoginPage'
 import PreviewPage from './pages/PreviewPage'
+import PublicInvitationPage from './pages/PublicInvitationPage'
 import RegisterPage from './pages/RegisterPage'
 
 export default function App() {
@@ -37,6 +38,7 @@ export default function App() {
               </RequireAuth>
             }
           />
+          <Route path="/i/:slug" element={<PublicInvitationPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

@@ -338,6 +338,34 @@ input:disabled {
   font-size: 1.1rem;
 }
 
+.public-page {
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0 0 2rem;
+}
+
+.public-page .invitation {
+  border: 0;
+  border-radius: 0;
+}
+
+.public-empty {
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .public-page {
+    padding: 1.5rem;
+  }
+
+  .public-page .invitation {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+}
+
 @media (max-width: 380px) {
   .preview-page {
     width: min(100% - 1rem, 40rem);

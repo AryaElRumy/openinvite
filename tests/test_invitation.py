@@ -145,6 +145,102 @@ def test_unknown_template_is_rejected(client):
     assert response.status_code == 422
 
 
+def test_publish_endpoints_require_authentication(client):
+    assert client.post("/api/invitation/publish").status_code == 401
+    assert client.post("/api/invitation/unpublish").status_code == 401
+
+
+def test_publish_requires_a_saved_draft(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+
+    response = client.post("/api/invitation/publish")
+    assert response.status_code == 400
+
+
+def test_publish_requires_headline_and_message(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    client.put("/api/invitation", json={**INVITATION, "headline": "", "message": ""})
+
+    response = client.post("/api/invitation/publish")
+    assert response.status_code == 400
+    assert "headline" in response.json()["detail"]
+    assert "message" in response.json()["detail"]
+
+
+def test_public_invitation_is_404_before_publish(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    client.put("/api/invitation", json=INVITATION)
+
+    assert client.get("/api/public/invitations/ayu-bima").status_code == 404
+
+
+def test_publish_snapshots_and_exposes_public_invitation(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    client.put("/api/invitation", json=INVITATION)
+
+    published = client.post("/api/invitation/publish")
+    assert published.status_code == 200
+    body = published.json()
+    assert body["version"] == 1
+    assert body["published_at"] is not None
+    assert body["slug"] == "ayu-bima"
+
+    public = client.get("/api/public/invitations/ayu-bima")
+    assert public.status_code == 200
+    snapshot = public.json()
+    assert snapshot["version"] == 1
+    assert snapshot["wedding"]["partner_one_name"] == "Ayu"
+    assert snapshot["wedding"]["slug_locked"] is True
+    assert snapshot["invitation"]["message"] == INVITATION["message"]
+
+
+def test_draft_edits_do_not_change_public_until_republish(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    client.put("/api/invitation", json=INVITATION)
+    client.post("/api/invitation/publish")
+
+    client.put("/api/invitation", json={**INVITATION, "message": "Updated"})
+    stale = client.get("/api/public/invitations/ayu-bima")
+    assert stale.json()["invitation"]["message"] == INVITATION["message"]
+
+    client.post("/api/invitation/publish")
+    fresh = client.get("/api/public/invitations/ayu-bima")
+    assert fresh.json()["invitation"]["message"] == "Updated"
+    assert fresh.json()["version"] == 2
+
+
+def test_unpublish_hides_public_invitation(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    client.put("/api/invitation", json=INVITATION)
+    client.post("/api/invitation/publish")
+
+    unpublished = client.post("/api/invitation/unpublish")
+    assert unpublished.status_code == 200
+    assert unpublished.json()["published_at"] is None
+    assert client.get("/api/public/invitations/ayu-bima").status_code == 404
+    assert client.get("/api/invitation").json()["message"] == INVITATION["message"]
+
+
+def test_publish_locks_the_wedding_slug(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    client.put("/api/invitation", json=INVITATION)
+    client.post("/api/invitation/publish")
+
+    response = client.put("/api/wedding", json={**WEDDING, "slug": "new-slug"})
+    assert response.status_code == 409
+
+
+def test_public_unknown_slug_returns_404(client):
+    assert client.get("/api/public/invitations/unknown").status_code == 404
+
+
 def test_invitations_are_scoped_to_the_owner(client):
     login_as(client, "first@example.com")
     create_wedding(client)

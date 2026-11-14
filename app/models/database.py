@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import JSON, Column
 from sqlmodel import Field
@@ -45,3 +45,9 @@ class Invitation(BaseModel, table=True):
         sa_column=Column(JSON, nullable=False, default=list),
     )
     closing_message: str | None = None
+    version: int = Field(default=0)
+    published_at: datetime | None = None
+    published_snapshot: dict | None = Field(
+        default=None,
+        sa_column=Column(JSON, nullable=True),
+    )

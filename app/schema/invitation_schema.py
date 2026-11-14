@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -51,8 +52,18 @@ class InvitationResponse(BaseModel):
     cover_image_url: str | None = None
     gallery_image_urls: list[str] = Field(default_factory=list)
     closing_message: str | None = None
+    slug: str | None = None
+    version: int = 0
+    published_at: datetime | None = None
 
 
 class InvitationPreview(BaseModel):
+    wedding: WeddingResponse
+    invitation: InvitationResponse
+
+
+class PublicInvitationResponse(BaseModel):
+    version: int
+    published_at: datetime
     wedding: WeddingResponse
     invitation: InvitationResponse
