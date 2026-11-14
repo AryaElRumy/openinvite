@@ -1,7 +1,7 @@
 [project]
-name = "fastapi-edge-template"
+name = "openinvite"
 version = "0.1.0"
-description = "Add your description here"
+description = "Open-source invitation management system powered by AI"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -9,11 +9,10 @@ dependencies = [
     "bson>=0.5.10",
     "fastapi>=0.117.1",
     "loguru>=0.7.3",
+    "psycopg2-binary>=2.9.13",
     "pydantic>=2.11.9",
     "pydantic-settings>=2.11.0",
-    "pyinstaller>=6.16.0",
     "python-dotenv>=1.1.1",
-    "python-multipart>=0.0.20",
     "reportlab>=4.4.5",
     "ruff>=0.13.1",
     "scalar-fastapi>=1.4.2",

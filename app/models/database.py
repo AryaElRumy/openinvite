@@ -1,7 +1,8 @@
 from typing import Optional
 
-from app.core.models import BaseModel
 from sqlmodel import Field
+
+from app.core.models import BaseModel
 
 
 class ExampleModel(BaseModel, table=True):

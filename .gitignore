@@ -11,8 +11,6 @@ wheels/
 .env
 .vscode/
 *.db
-ffmpeg/
-samples/
 tools/
 public/
 static/
