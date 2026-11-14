@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
+import { QRCodeSVG } from 'qrcode.react'
 import { ApiError, api } from '../api'
 import InvitationTemplate from '../components/InvitationTemplate'
 import type {
@@ -131,6 +132,16 @@ export default function PublicInvitationPage() {
               invitation={invitation.invitation}
               guest={guest}
             />
+
+            {guest && (
+              <section className="card rsvp-card">
+                <h2>Your check-in QR</h2>
+                <p className="muted">Show this at reception.</p>
+                <div className="qr-code">
+                  <QRCodeSVG value={window.location.href} size={180} />
+                </div>
+              </section>
+            )}
 
             {guest && (
               <section className="card rsvp-card">

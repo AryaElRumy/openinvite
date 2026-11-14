@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ApiError, api } from '../api'
 import type { ReceptionistGuest, Wedding } from '../types'
+
+const QrScanner = lazy(() => import('../components/QrScanner'))
 
 function formatDate(value: string): string {
   const date = new Date(`${value}T00:00:00`)
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleDateString(undefined, { dateStyle: 'long' })
+}
+
+function extractCode(text: string): string {
+  const match = text.trim().match(/\/i\/[^/]+\/([^/?#]+)/)
+  return match ? match[1] : text.trim()
 }
 
 export default function ReceptionPage() {
@@ -16,6 +23,9 @@ export default function ReceptionPage() {
   const [loading, setLoading] = useState(token !== undefined)
   const [invalid, setInvalid] = useState(false)
   const [search, setSearch] = useState('')
+  const [scanning, setScanning] = useState(false)
+  const [scanResult, setScanResult] = useState<ReceptionistGuest | null>(null)
+  const [scanError, setScanError] = useState('')
 
   useEffect(() => {
     if (!token) return
@@ -44,6 +54,33 @@ export default function ReceptionPage() {
       cancelled = true
     }
   }, [token])
+
+  const handleScan = useCallback(
+    async (text: string) => {
+      if (!token) return
+
+      const code = extractCode(text)
+      setScanning(false)
+      setScanResult(null)
+      setScanError('')
+
+      try {
+        const guest = await api.postWithToken<ReceptionistGuest>(
+          '/reception/validate',
+          token,
+          { code },
+        )
+        setScanResult(guest)
+      } catch (err) {
+        setScanError(
+          err instanceof ApiError
+            ? err.message
+            : 'Unable to validate the QR code.',
+        )
+      }
+    },
+    [token],
+  )
 
   if (!token) {
     return (
@@ -85,6 +122,44 @@ export default function ReceptionPage() {
             <p className="muted">
               {formatDate(wedding.wedding_date)} · {wedding.venue_name}
             </p>
+
+            <div className="actions">
+              <button
+                className="button"
+                type="button"
+                disabled={scanning}
+                onClick={() => {
+                  setScanning(true)
+                  setScanError('')
+                  setScanResult(null)
+                }}
+              >
+                Scan QR
+              </button>
+            </div>
+
+            {scanning && (
+              <>
+                <Suspense fallback={<p className="muted">Starting camera…</p>}>
+                  <QrScanner onScan={handleScan} />
+                </Suspense>
+                <button
+                  className="button secondary"
+                  type="button"
+                  onClick={() => setScanning(false)}
+                >
+                  Close scanner
+                </button>
+              </>
+            )}
+
+            {scanResult && (
+              <p className="success">
+                Valid: {scanResult.name} · up to {scanResult.max_attendees}{' '}
+                {scanResult.max_attendees === 1 ? 'guest' : 'guests'}.
+              </p>
+            )}
+            {scanError !== '' && <p className="error">{scanError}</p>}
 
             <label className="field">
               <span>Find a guest</span>

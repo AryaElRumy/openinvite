@@ -6,12 +6,13 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlmodel import Session, select
 
 from app.core.security import get_current_user
-from app.models.database import Guest, ReceptionistToken, User, Wedding
+from app.models.database import Guest, Invitation, ReceptionistToken, User, Wedding
 from app.models.engine import get_session
 from app.schema.reception_schema import (
     ReceptionistGuestResponse,
     ReceptionistTokenResponse,
     ReceptionistTokenStatus,
+    ReceptionValidationRequest,
 )
 from app.schema.wedding_schema import WeddingResponse
 
@@ -168,3 +169,33 @@ def reception_guests(
         statement = statement.where(Guest.name.ilike(f"%{search.strip()}%"))
     statement = statement.order_by(Guest.name)
     return session.exec(statement).all()
+
+
+@reception_router.post("/validate", response_model=ReceptionistGuestResponse)
+def validate_qr(
+    payload: ReceptionValidationRequest,
+    wedding: Wedding = Depends(require_receptionist),
+    session: Session = Depends(get_session),
+):
+    invitation = session.exec(
+        select(Invitation).where(Invitation.wedding_id == wedding.id)
+    ).first()
+    if invitation is None or invitation.published_snapshot is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invitation not found",
+        )
+
+    guest = session.exec(
+        select(Guest).where(
+            Guest.invitation_code == payload.code,
+            Guest.wedding_id == wedding.id,
+        )
+    ).first()
+    if guest is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invitation not found",
+        )
+
+    return guest

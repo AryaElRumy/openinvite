@@ -455,6 +455,28 @@ input:disabled {
   }
 }
 
+.qr-code {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.qr-code svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.qr-scanner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.qr-scanner #qr-reader {
+  overflow: hidden;
+  border-radius: 12px;
+}
+
 .rsvp-card {
   margin-top: 1.25rem;
 }

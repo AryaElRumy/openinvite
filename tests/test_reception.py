@@ -7,6 +7,16 @@ WEDDING = {
     "venue_name": "Villa Taman",
 }
 
+INVITATION = {
+    "template_id": "classic",
+    "headline": "Ayu & Bima",
+    "message": "We are getting married.",
+    "quote": None,
+    "cover_image_url": None,
+    "gallery_image_urls": [],
+    "closing_message": None,
+}
+
 
 def login_as(client, email):
     response = client.post(
@@ -25,6 +35,11 @@ def create_guest(client, name="Ayu"):
     response = client.post("/api/guests", json={"name": name})
     assert response.status_code == 201
     return response.json()
+
+
+def publish_invitation(client):
+    assert client.put("/api/invitation", json=INVITATION).status_code == 200
+    assert client.post("/api/invitation/publish").status_code == 200
 
 
 def token_headers(token):
@@ -153,3 +168,100 @@ def test_revoking_is_scoped_to_the_owner(client):
 
     response = client.get("/api/reception/session", headers=token_headers(token))
     assert response.status_code == 200
+
+
+def test_validate_qr_returns_guest(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    publish_invitation(client)
+    guest = create_guest(client, "Ayu Lestari")
+    token = create_token(client)
+    client.post("/api/auth/logout")
+
+    response = client.post(
+        "/api/reception/validate",
+        json={"code": guest["invitation_code"]},
+        headers=token_headers(token),
+    )
+    assert response.status_code == 200
+    assert response.json()["name"] == "Ayu Lestari"
+
+
+def test_validate_unknown_code_returns_404(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    publish_invitation(client)
+    create_guest(client)
+    token = create_token(client)
+    client.post("/api/auth/logout")
+
+    response = client.post(
+        "/api/reception/validate",
+        json={"code": "not-a-code"},
+        headers=token_headers(token),
+    )
+    assert response.status_code == 404
+
+
+def test_validate_wrong_wedding_returns_404(client):
+    login_as(client, "first@example.com")
+    create_wedding(client)
+    publish_invitation(client)
+    guest = create_guest(client, "Ayu")
+    client.post("/api/auth/logout")
+
+    login_as(client, "second@example.com")
+    create_wedding(client)
+    publish_invitation(client)
+    token = create_token(client)
+    client.post("/api/auth/logout")
+
+    response = client.post(
+        "/api/reception/validate",
+        json={"code": guest["invitation_code"]},
+        headers=token_headers(token),
+    )
+    assert response.status_code == 404
+
+
+def test_validate_requires_published_invitation(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    guest = create_guest(client, "Ayu")
+    token = create_token(client)
+    client.post("/api/auth/logout")
+
+    response = client.post(
+        "/api/reception/validate",
+        json={"code": guest["invitation_code"]},
+        headers=token_headers(token),
+    )
+    assert response.status_code == 404
+
+
+def test_validate_empty_code_is_rejected(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    publish_invitation(client)
+    token = create_token(client)
+    client.post("/api/auth/logout")
+
+    response = client.post(
+        "/api/reception/validate",
+        json={"code": ""},
+        headers=token_headers(token),
+    )
+    assert response.status_code == 422
+
+
+def test_validate_requires_receptionist_token(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    publish_invitation(client)
+    guest = create_guest(client, "Ayu")
+
+    response = client.post(
+        "/api/reception/validate",
+        json={"code": guest["invitation_code"]},
+    )
+    assert response.status_code == 401

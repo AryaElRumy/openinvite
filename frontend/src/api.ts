@@ -45,6 +45,12 @@ export const api = {
     request<T>(path, {
       headers: { 'X-Receptionist-Token': token },
     }),
+  postWithToken: <T>(path: string, token: string, body?: unknown) =>
+    request<T>(path, {
+      method: 'POST',
+      headers: { 'X-Receptionist-Token': token },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, {
       method: 'POST',
