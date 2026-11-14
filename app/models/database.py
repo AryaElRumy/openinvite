@@ -29,3 +29,19 @@ class Wedding(BaseModel, table=True):
         sa_column=Column(JSON, nullable=False, default=list),
     )
     slug_locked: bool = Field(default=False)
+
+
+class Invitation(BaseModel, table=True):
+    __tablename__ = "invitations"
+
+    wedding_id: str = Field(foreign_key="weddings.id", unique=True, index=True)
+    template_id: str = Field(default="classic")
+    headline: str = Field(default="")
+    message: str = Field(default="")
+    quote: str | None = None
+    cover_image_url: str | None = None
+    gallery_image_urls: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(JSON, nullable=False, default=list),
+    )
+    closing_message: str | None = None

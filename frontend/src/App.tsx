@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, RequireAuth } from './auth'
 import DashboardPage from './pages/DashboardPage'
+import InvitationEditorPage from './pages/InvitationEditorPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 
@@ -16,6 +17,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <DashboardPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/editor"
+            element={
+              <RequireAuth>
+                <InvitationEditorPage />
               </RequireAuth>
             }
           />

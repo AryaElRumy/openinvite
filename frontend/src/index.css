@@ -74,6 +74,12 @@ a {
   margin-bottom: 1.25rem;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -86,7 +92,8 @@ a {
 }
 
 input,
-textarea {
+textarea,
+select {
   width: 100%;
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--border);
@@ -96,8 +103,13 @@ textarea {
   font: inherit;
 }
 
+textarea {
+  resize: vertical;
+}
+
 input:focus-visible,
 textarea:focus-visible,
+select:focus-visible,
 button:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--accent);

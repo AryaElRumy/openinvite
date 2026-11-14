@@ -34,3 +34,13 @@ export type WeddingPayload = {
   events: WeddingEvent[]
   slug?: string | null
 }
+
+export type Invitation = {
+  template_id: string
+  headline: string
+  message: string
+  quote: string | null
+  cover_image_url: string | null
+  gallery_image_urls: string[]
+  closing_message: string | null
+}

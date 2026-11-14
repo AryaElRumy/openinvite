@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { ApiError, api } from '../api'
 import { useAuth } from '../auth'
 import type { Wedding, WeddingPayload } from '../types'
@@ -173,9 +174,14 @@ export default function DashboardPage() {
     <main className="page">
       <header className="topbar">
         <strong>OpenInvite</strong>
-        <button className="link" type="button" onClick={() => void logout()}>
-          Sign out
-        </button>
+        <nav className="topbar-actions">
+          <Link className="link" to="/editor">
+            Edit invitation
+          </Link>
+          <button className="link" type="button" onClick={() => void logout()}>
+            Sign out
+          </button>
+        </nav>
       </header>
 
       <section className="card">
