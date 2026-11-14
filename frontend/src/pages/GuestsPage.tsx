@@ -25,6 +25,7 @@ export default function GuestsPage() {
 
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [shareFilter, setShareFilter] = useState('')
 
   const [guestName, setGuestName] = useState('')
   const [guestCategoryId, setGuestCategoryId] = useState('')
@@ -363,11 +364,19 @@ export default function GuestsPage() {
     (total, guest) => total + guest.max_attendees,
     0,
   )
+  const sharedCount = guests.filter(
+    (guest) => guest.shared_at !== null,
+  ).length
+  const unsharedCount = guests.length - sharedCount
   const query = search.trim().toLowerCase()
   const visibleGuests = guests.filter(
     (guest) =>
       (query === '' || guest.name.toLowerCase().includes(query)) &&
-      (categoryFilter === '' || guest.category_id === categoryFilter),
+      (categoryFilter === '' || guest.category_id === categoryFilter) &&
+      (shareFilter === '' ||
+        (shareFilter === 'shared'
+          ? guest.shared_at !== null
+          : guest.shared_at === null)),
   )
 
   return (
@@ -403,7 +412,8 @@ export default function GuestsPage() {
           <>
             <p className="muted">
               {guests.length} invitation{guests.length === 1 ? '' : 's'} ·{' '}
-              {totalCapacity} attendee capacity
+              {totalCapacity} attendee capacity · {sharedCount} shared ·{' '}
+              {unsharedCount} not shared
             </p>
 
             {error !== '' && <p className="error">{error}</p>}
@@ -439,6 +449,18 @@ export default function GuestsPage() {
                       {category.name}
                     </option>
                   ))}
+                </select>
+              </label>
+
+              <label className="field">
+                <span>Share status</span>
+                <select
+                  value={shareFilter}
+                  onChange={(event) => setShareFilter(event.target.value)}
+                >
+                  <option value="">All guests</option>
+                  <option value="shared">Marked shared</option>
+                  <option value="unshared">Not shared</option>
                 </select>
               </label>
             </div>

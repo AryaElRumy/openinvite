@@ -217,6 +217,7 @@ def _require_wedding(session: Session, owner_id: str) -> Wedding:
 def list_guests(
     search: str | None = Query(default=None, max_length=120),
     category_id: str | None = None,
+    shared: bool | None = None,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
@@ -227,6 +228,11 @@ def list_guests(
         statement = statement.where(Guest.name.ilike(f"%{search.strip()}%"))
     if category_id is not None:
         statement = statement.where(Guest.category_id == category_id)
+    if shared is not None:
+        if shared:
+            statement = statement.where(Guest.shared_at.is_not(None))
+        else:
+            statement = statement.where(Guest.shared_at.is_(None))
     statement = statement.order_by(Guest.name)
 
     return session.exec(statement).all()

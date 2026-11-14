@@ -410,6 +410,27 @@ def test_share_is_owner_scoped(client):
     assert response.status_code == 404
 
 
+def test_guests_can_be_filtered_by_share_status(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    shared = create_guest(client, "Ayu")
+    create_guest(client, "Bima")
+    client.put(f"/api/guests/{shared['id']}/share", json={"shared": True})
+
+    shared_names = [
+        guest["name"]
+        for guest in client.get("/api/guests", params={"shared": True}).json()
+    ]
+    unshared_names = [
+        guest["name"]
+        for guest in client.get("/api/guests", params={"shared": False}).json()
+    ]
+
+    assert shared_names == ["Ayu"]
+    assert unshared_names == ["Bima"]
+    assert len(client.get("/api/guests").json()) == 2
+
+
 def test_guests_are_scoped_to_the_owner(client):
     login_as(client, "first@example.com")
     create_wedding(client)
