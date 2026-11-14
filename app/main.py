@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from scalar_fastapi import get_scalar_api_reference
 
 from app.core.settings import settings
-from app.routers.example_router import example_router
+from app.routers.auth_router import auth_router
 
 app = FastAPI(
     title=settings.app_settings.APP_NAME, version=settings.app_settings.APP_VERSION
@@ -18,9 +18,10 @@ if getattr(sys, "frozen", False):
 else:
     public_path = settings.app_settings.PUBLIC_DIR
 
-app.mount("/public", StaticFiles(directory=public_path), name="public")
+if os.path.isdir(public_path):
+    app.mount("/public", StaticFiles(directory=public_path), name="public")
 
-app.include_router(example_router)
+app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,

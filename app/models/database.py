@@ -1,10 +1,10 @@
-from typing import Optional
-
 from sqlmodel import Field
 
 from app.core.models import BaseModel
 
 
-class ExampleModel(BaseModel, table=True):
-    name: str = Field(default="Example Model")
-    description: Optional[str] = None
+class User(BaseModel, table=True):
+    __tablename__ = "users"
+
+    email: str = Field(index=True, unique=True)
+    password_hash: str
