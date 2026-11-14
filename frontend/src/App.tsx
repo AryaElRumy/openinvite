@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, RequireAuth } from './auth'
 import DashboardPage from './pages/DashboardPage'
+import GuestsPage from './pages/GuestsPage'
 import InvitationEditorPage from './pages/InvitationEditorPage'
 import LoginPage from './pages/LoginPage'
 import PreviewPage from './pages/PreviewPage'
@@ -35,6 +36,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <PreviewPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/guests"
+            element={
+              <RequireAuth>
+                <GuestsPage />
               </RequireAuth>
             }
           />

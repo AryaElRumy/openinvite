@@ -9,6 +9,7 @@ from scalar_fastapi import get_scalar_api_reference
 
 from app.core.settings import settings
 from app.routers.auth_router import auth_router
+from app.routers.guest_router import guest_category_router, guest_router
 from app.routers.invitation_router import invitation_router
 from app.routers.public_router import public_router
 from app.routers.wedding_router import wedding_router
@@ -28,6 +29,8 @@ if os.path.isdir(public_path):
 app.include_router(auth_router)
 app.include_router(wedding_router)
 app.include_router(invitation_router)
+app.include_router(guest_router)
+app.include_router(guest_category_router)
 app.include_router(public_router)
 
 app.add_middleware(

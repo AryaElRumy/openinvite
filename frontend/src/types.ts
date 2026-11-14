@@ -59,3 +59,19 @@ export type PublicInvitation = {
   wedding: Wedding
   invitation: Invitation
 }
+
+export type GuestCategory = {
+  id: string
+  name: string
+}
+
+export type Guest = {
+  id: string
+  name: string
+  category_id: string | null
+}
+
+export type GuestPayload = {
+  name: string
+  category_id: string | null
+}

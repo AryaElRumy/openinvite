@@ -175,6 +175,9 @@ export default function DashboardPage() {
       <header className="topbar">
         <strong>OpenInvite</strong>
         <nav className="topbar-actions">
+          <Link className="link" to="/guests">
+            Guests
+          </Link>
           <Link className="link" to="/editor">
             Edit invitation
           </Link>

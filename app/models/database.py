@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import JSON, Column
+from sqlalchemy import JSON, Column, UniqueConstraint
 from sqlmodel import Field
 
 from app.core.models import BaseModel
@@ -51,3 +51,23 @@ class Invitation(BaseModel, table=True):
         default=None,
         sa_column=Column(JSON, nullable=True),
     )
+
+
+class GuestCategory(BaseModel, table=True):
+    __tablename__ = "guest_categories"
+    __table_args__ = (
+        UniqueConstraint("wedding_id", "name", name="uq_guest_categories_wedding_name"),
+    )
+
+    wedding_id: str = Field(foreign_key="weddings.id", index=True)
+    name: str
+
+
+class Guest(BaseModel, table=True):
+    __tablename__ = "guests"
+
+    wedding_id: str = Field(foreign_key="weddings.id", index=True)
+    category_id: str | None = Field(
+        default=None, foreign_key="guest_categories.id", index=True
+    )
+    name: str
