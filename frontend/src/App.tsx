@@ -6,6 +6,7 @@ import InvitationEditorPage from './pages/InvitationEditorPage'
 import LoginPage from './pages/LoginPage'
 import PreviewPage from './pages/PreviewPage'
 import PublicInvitationPage from './pages/PublicInvitationPage'
+import ReceptionPage from './pages/ReceptionPage'
 import RegisterPage from './pages/RegisterPage'
 
 export default function App() {
@@ -49,6 +50,7 @@ export default function App() {
           />
           <Route path="/i/:slug" element={<PublicInvitationPage />} />
           <Route path="/i/:slug/:code" element={<PublicInvitationPage />} />
+          <Route path="/reception/:token" element={<ReceptionPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

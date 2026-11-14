@@ -8,6 +8,8 @@ import type {
   GuestCategory,
   GuestImportResult,
   GuestPayload,
+  ReceptionistTokenResponse,
+  ReceptionistTokenStatus,
   Wedding,
 } from '../types'
 
@@ -43,6 +45,12 @@ export default function GuestsPage() {
   )
   const [importCommitted, setImportCommitted] = useState(false)
 
+  const [receptionistActive, setReceptionistActive] = useState(false)
+  const [receptionistLastUsed, setReceptionistLastUsed] = useState<string | null>(
+    null,
+  )
+  const [receptionistToken, setReceptionistToken] = useState<string | null>(null)
+
   useEffect(() => {
     let cancelled = false
 
@@ -50,12 +58,18 @@ export default function GuestsPage() {
       api.get<Guest[]>('/guests'),
       api.get<GuestCategory[]>('/guest-categories'),
       api.get<Wedding>('/wedding'),
+      api.get<ReceptionistTokenStatus>('/receptionist').catch((err) => {
+        if (err instanceof ApiError && err.status === 404) return null
+        throw err
+      }),
     ])
-      .then(([guestData, categoryData, weddingData]) => {
+      .then(([guestData, categoryData, weddingData, receptionistData]) => {
         if (cancelled) return
         setGuests(guestData)
         setCategories(categoryData)
         setWedding(weddingData)
+        setReceptionistActive(receptionistData?.active ?? false)
+        setReceptionistLastUsed(receptionistData?.last_used_at ?? null)
       })
       .catch((err) => {
         if (cancelled) return
@@ -366,6 +380,78 @@ export default function GuestsPage() {
       setError(
         err instanceof ApiError ? err.message : 'Unable to clear the RSVP.',
       )
+    }
+  }
+
+  async function handleCreateReceptionist() {
+    if (
+      receptionistActive &&
+      !window.confirm(
+        'Replace the current receptionist link? The old link will stop working.',
+      )
+    ) {
+      return
+    }
+
+    setError('')
+    setNotice('')
+    setSaving(true)
+
+    try {
+      const data = await api.post<ReceptionistTokenResponse>('/receptionist')
+      setReceptionistToken(data.token)
+      setReceptionistActive(true)
+      setReceptionistLastUsed(null)
+      setNotice(
+        'Receptionist link created. Copy it now; it will not be shown again.',
+      )
+      reload()
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : 'Unable to create receptionist access.',
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleRevokeReceptionist() {
+    if (!window.confirm('Revoke receptionist access?')) return
+
+    setError('')
+    setNotice('')
+    setSaving(true)
+
+    try {
+      await api.delete('/receptionist')
+      setReceptionistToken(null)
+      setReceptionistActive(false)
+      setReceptionistLastUsed(null)
+      setNotice('Receptionist access revoked.')
+      reload()
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : 'Unable to revoke receptionist access.',
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleCopyReceptionist() {
+    if (receptionistToken === null) return
+
+    try {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/reception/${receptionistToken}`,
+      )
+      setNotice('Receptionist link copied.')
+    } catch {
+      setError('Unable to copy the receptionist link.')
     }
   }
 
@@ -823,6 +909,55 @@ export default function GuestsPage() {
               )}
             </div>
           )}
+        </section>
+      )}
+
+      {!loading && !needsWedding && (
+        <section className="card">
+          <h2>Receptionist access</h2>
+          <p className="muted">
+            {receptionistActive
+              ? 'Active. The link can view guest lookup and check-in only.'
+              : 'Not configured.'}
+          </p>
+          {receptionistLastUsed !== null && (
+            <p className="muted">
+              Last used {new Date(receptionistLastUsed).toLocaleString()}
+            </p>
+          )}
+          {receptionistToken !== null && (
+            <div className="slug-row">
+              <span className="muted">/reception/</span>
+              <input readOnly value={receptionistToken} />
+              <button
+                className="button secondary"
+                type="button"
+                onClick={() => void handleCopyReceptionist()}
+              >
+                Copy link
+              </button>
+            </div>
+          )}
+          <div className="actions">
+            <button
+              className="button"
+              type="button"
+              disabled={saving}
+              onClick={() => void handleCreateReceptionist()}
+            >
+              {receptionistActive ? 'Regenerate link' : 'Create link'}
+            </button>
+            {receptionistActive && (
+              <button
+                className="button secondary"
+                type="button"
+                disabled={saving}
+                onClick={() => void handleRevokeReceptionist()}
+              >
+                Revoke
+              </button>
+            )}
+          </div>
         </section>
       )}
     </main>

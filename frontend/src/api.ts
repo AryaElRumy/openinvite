@@ -41,6 +41,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const api = {
   get: <T>(path: string) => request<T>(path),
+  getWithToken: <T>(path: string, token: string) =>
+    request<T>(path, {
+      headers: { 'X-Receptionist-Token': token },
+    }),
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, {
       method: 'POST',

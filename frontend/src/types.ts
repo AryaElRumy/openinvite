@@ -115,3 +115,20 @@ export type GuestImportResult = {
   invalid_count: number
   imported: number
 }
+
+export type ReceptionistTokenStatus = {
+  active: boolean
+  created_at: string
+  last_used_at: string | null
+}
+
+export type ReceptionistTokenResponse = ReceptionistTokenStatus & {
+  token: string
+}
+
+export type ReceptionistGuest = {
+  id: string
+  name: string
+  max_attendees: number
+  invitation_code: string
+}

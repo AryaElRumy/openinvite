@@ -90,3 +90,12 @@ class Rsvp(BaseModel, table=True):
     status: str = "attending"
     attendee_count: int = 1
     responded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ReceptionistToken(BaseModel, table=True):
+    __tablename__ = "receptionist_tokens"
+
+    wedding_id: str = Field(foreign_key="weddings.id", unique=True, index=True)
+    token_hash: str = Field(unique=True, index=True)
+    revoked_at: datetime | None = None
+    last_used_at: datetime | None = None
