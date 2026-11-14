@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schema.rsvp_schema import RsvpResponse
+
 
 class GuestCategoryCreate(BaseModel):
     name: str = Field(min_length=1, max_length=80)
@@ -53,6 +55,7 @@ class GuestResponse(BaseModel):
     invitation_code: str
     max_attendees: int
     shared_at: datetime | None
+    rsvp: RsvpResponse | None = None
 
 
 class GuestShareUpdate(BaseModel):

@@ -26,6 +26,7 @@ export default function GuestsPage() {
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [shareFilter, setShareFilter] = useState('')
+  const [rsvpFilter, setRsvpFilter] = useState('')
 
   const [guestName, setGuestName] = useState('')
   const [guestCategoryId, setGuestCategoryId] = useState('')
@@ -352,6 +353,22 @@ export default function GuestsPage() {
     }
   }
 
+  async function handleClearRsvp(guest: Guest) {
+    if (!window.confirm(`Clear the RSVP for ${guest.name}?`)) return
+
+    setError('')
+    setNotice('')
+    try {
+      await api.delete(`/guests/${guest.id}/rsvp`)
+      setNotice('RSVP cleared.')
+      reload()
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Unable to clear the RSVP.',
+      )
+    }
+  }
+
   function categoryName(categoryId: string | null): string {
     if (categoryId === null) return 'Uncategorized'
     return (
@@ -368,6 +385,13 @@ export default function GuestsPage() {
     (guest) => guest.shared_at !== null,
   ).length
   const unsharedCount = guests.length - sharedCount
+  const attendingCount = guests.filter(
+    (guest) => guest.rsvp?.status === 'attending',
+  ).length
+  const declinedCount = guests.filter(
+    (guest) => guest.rsvp?.status === 'declined',
+  ).length
+  const notRespondedCount = guests.length - attendingCount - declinedCount
   const query = search.trim().toLowerCase()
   const visibleGuests = guests.filter(
     (guest) =>
@@ -376,7 +400,11 @@ export default function GuestsPage() {
       (shareFilter === '' ||
         (shareFilter === 'shared'
           ? guest.shared_at !== null
-          : guest.shared_at === null)),
+          : guest.shared_at === null)) &&
+      (rsvpFilter === '' ||
+        (rsvpFilter === 'none'
+          ? guest.rsvp === null
+          : guest.rsvp?.status === rsvpFilter)),
   )
 
   return (
@@ -415,6 +443,12 @@ export default function GuestsPage() {
               {totalCapacity} attendee capacity · {sharedCount} shared ·{' '}
               {unsharedCount} not shared
             </p>
+            {guests.length > 0 && (
+              <p className="muted">
+                {attendingCount} attending · {declinedCount} declined ·{' '}
+                {notRespondedCount} not responded
+              </p>
+            )}
 
             {error !== '' && <p className="error">{error}</p>}
             {notice !== '' && <p className="success">{notice}</p>}
@@ -461,6 +495,19 @@ export default function GuestsPage() {
                   <option value="">All guests</option>
                   <option value="shared">Marked shared</option>
                   <option value="unshared">Not shared</option>
+                </select>
+              </label>
+
+              <label className="field">
+                <span>RSVP status</span>
+                <select
+                  value={rsvpFilter}
+                  onChange={(event) => setRsvpFilter(event.target.value)}
+                >
+                  <option value="">All RSVPs</option>
+                  <option value="attending">Attending</option>
+                  <option value="declined">Declined</option>
+                  <option value="none">Not responded</option>
                 </select>
               </label>
             </div>
@@ -545,6 +592,16 @@ export default function GuestsPage() {
                           ? 'Not shared'
                           : 'Marked shared'}
                       </span>
+                      <span className="muted">
+                        RSVP:{' '}
+                        {guest.rsvp === null
+                          ? 'Not responded'
+                          : guest.rsvp.status === 'attending'
+                            ? `Attending (${guest.rsvp.attendee_count})`
+                            : 'Declined'}
+                        {guest.rsvp !== null &&
+                          ` · ${new Date(guest.rsvp.responded_at).toLocaleDateString()}`}
+                      </span>
                     </div>
                     <div className="guest-row-actions">
                       <button
@@ -570,6 +627,15 @@ export default function GuestsPage() {
                           onClick={() => void handleUnshareGuest(guest)}
                         >
                           Undo
+                        </button>
+                      )}
+                      {guest.rsvp !== null && (
+                        <button
+                          className="link"
+                          type="button"
+                          onClick={() => void handleClearRsvp(guest)}
+                        >
+                          Clear RSVP
                         </button>
                       )}
                       <button

@@ -17,7 +17,7 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.core.security import get_current_user
-from app.models.database import Guest, GuestCategory, User, Wedding
+from app.models.database import Guest, GuestCategory, Rsvp, User, Wedding
 from app.models.engine import get_session
 from app.schema.guest_schema import (
     GuestCategoryCreate,
@@ -30,6 +30,7 @@ from app.schema.guest_schema import (
     GuestShareUpdate,
     GuestUpdate,
 )
+from app.schema.rsvp_schema import RsvpResponse
 
 guest_router = APIRouter(prefix="/api/guests", tags=["Guests"])
 guest_category_router = APIRouter(
@@ -56,6 +57,18 @@ def _get_guest(session: Session, wedding_id: str, guest_id: str) -> Guest | None
     return session.exec(
         select(Guest).where(Guest.id == guest_id, Guest.wedding_id == wedding_id)
     ).first()
+
+
+def _rsvp_for_guest(session: Session, guest_id: str) -> Rsvp | None:
+    return session.exec(select(Rsvp).where(Rsvp.guest_id == guest_id)).first()
+
+
+def _guest_response(guest: Guest, rsvp: Rsvp | None) -> GuestResponse:
+    return GuestResponse.model_validate(guest).model_copy(
+        update={
+            "rsvp": (RsvpResponse.model_validate(rsvp) if rsvp is not None else None)
+        }
+    )
 
 
 def _category_name_taken(
@@ -235,7 +248,12 @@ def list_guests(
             statement = statement.where(Guest.shared_at.is_(None))
     statement = statement.order_by(Guest.name)
 
-    return session.exec(statement).all()
+    guests = session.exec(statement).all()
+    rsvps = session.exec(
+        select(Rsvp).where(Rsvp.guest_id.in_([guest.id for guest in guests]))
+    ).all()
+    rsvp_by_guest = {rsvp.guest_id: rsvp for rsvp in rsvps}
+    return [_guest_response(guest, rsvp_by_guest.get(guest.id)) for guest in guests]
 
 
 @guest_router.post(
@@ -264,7 +282,7 @@ def create_guest(
     session.add(guest)
     session.commit()
     session.refresh(guest)
-    return guest
+    return _guest_response(guest, _rsvp_for_guest(session, guest.id))
 
 
 @guest_router.post("/import", response_model=GuestImportResult)
@@ -358,7 +376,7 @@ def update_guest(
     session.add(guest)
     session.commit()
     session.refresh(guest)
-    return guest
+    return _guest_response(guest, _rsvp_for_guest(session, guest.id))
 
 
 @guest_router.put("/{guest_id}/share", response_model=GuestResponse)
@@ -385,7 +403,27 @@ def share_guest(
     session.add(guest)
     session.commit()
     session.refresh(guest)
-    return guest
+    return _guest_response(guest, _rsvp_for_guest(session, guest.id))
+
+
+@guest_router.delete("/{guest_id}/rsvp", status_code=status.HTTP_204_NO_CONTENT)
+def clear_guest_rsvp(
+    guest_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    wedding = _require_wedding(session, current_user.id)
+
+    guest = _get_guest(session, wedding.id, guest_id)
+    if guest is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Guest not found"
+        )
+
+    rsvp = _rsvp_for_guest(session, guest.id)
+    if rsvp is not None:
+        session.delete(rsvp)
+        session.commit()
 
 
 @guest_router.delete("/{guest_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -62,6 +62,19 @@ def setup_published_guest(client, max_attendees=2):
     return wedding, guest
 
 
+def setup_guest_with_rsvp(client, max_attendees=2):
+    login_as(client, "couple@example.com")
+    wedding = create_wedding(client)
+    publish_invitation(client)
+    guest = create_guest(client, max_attendees=max_attendees)
+    response = client.post(
+        rsvp_url(wedding, guest),
+        json={"status": "attending", "attendee_count": 2},
+    )
+    assert response.status_code == 200
+    return wedding, guest, response.json()
+
+
 def test_guest_can_submit_and_update_rsvp(client):
     wedding, guest = setup_published_guest(client)
     url = rsvp_url(wedding, guest)
@@ -135,4 +148,28 @@ def test_rsvp_requires_published_invitation(client):
         rsvp_url(wedding, guest),
         json={"status": "attending", "attendee_count": 1},
     )
+    assert response.status_code == 404
+
+
+def test_owner_guest_list_includes_rsvp_and_can_clear(client):
+    _, guest, _ = setup_guest_with_rsvp(client)
+
+    guests = client.get("/api/guests").json()
+    assert guests[0]["rsvp"]["status"] == "attending"
+    assert guests[0]["rsvp"]["attendee_count"] == 2
+    assert guests[0]["rsvp"]["responded_at"] is not None
+
+    cleared = client.delete(f"/api/guests/{guest['id']}/rsvp")
+    assert cleared.status_code == 204
+    assert client.get("/api/guests").json()[0]["rsvp"] is None
+
+
+def test_clear_rsvp_is_owner_scoped(client):
+    _, guest, _ = setup_guest_with_rsvp(client)
+    client.post("/api/auth/logout")
+
+    login_as(client, "second@example.com")
+    create_wedding(client)
+
+    response = client.delete(f"/api/guests/{guest['id']}/rsvp")
     assert response.status_code == 404

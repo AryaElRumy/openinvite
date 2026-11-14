@@ -90,6 +90,7 @@ export type Guest = {
   invitation_code: string
   max_attendees: number
   shared_at: string | null
+  rsvp: Rsvp | null
 }
 
 export type GuestPayload = {
