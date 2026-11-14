@@ -80,6 +80,7 @@ export type Guest = {
   category_id: string | null
   invitation_code: string
   max_attendees: number
+  shared_at: string | null
 }
 
 export type GuestPayload = {

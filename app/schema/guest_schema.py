@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -50,6 +52,11 @@ class GuestResponse(BaseModel):
     category_id: str | None
     invitation_code: str
     max_attendees: int
+    shared_at: datetime | None
+
+
+class GuestShareUpdate(BaseModel):
+    shared: bool
 
 
 class GuestImportRow(BaseModel):

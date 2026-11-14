@@ -8,12 +8,14 @@ import type {
   GuestCategory,
   GuestImportResult,
   GuestPayload,
+  Wedding,
 } from '../types'
 
 export default function GuestsPage() {
   const { logout } = useAuth()
   const [guests, setGuests] = useState<Guest[]>([])
   const [categories, setCategories] = useState<GuestCategory[]>([])
+  const [wedding, setWedding] = useState<Wedding | null>(null)
   const [loading, setLoading] = useState(true)
   const [needsWedding, setNeedsWedding] = useState(false)
   const [error, setError] = useState('')
@@ -45,11 +47,13 @@ export default function GuestsPage() {
     Promise.all([
       api.get<Guest[]>('/guests'),
       api.get<GuestCategory[]>('/guest-categories'),
+      api.get<Wedding>('/wedding'),
     ])
-      .then(([guestData, categoryData]) => {
+      .then(([guestData, categoryData, weddingData]) => {
         if (cancelled) return
         setGuests(guestData)
         setCategories(categoryData)
+        setWedding(weddingData)
       })
       .catch((err) => {
         if (cancelled) return
@@ -283,6 +287,70 @@ export default function GuestsPage() {
     }
   }
 
+  function formatWeddingDate(value: string): string {
+    const date = new Date(`${value}T00:00:00`)
+    if (Number.isNaN(date.getTime())) return value
+    return date.toLocaleDateString(undefined, { dateStyle: 'long' })
+  }
+
+  function guestUrl(guest: Guest): string {
+    if (wedding === null) return ''
+    return `${window.location.origin}/i/${wedding.slug}/${guest.invitation_code}`
+  }
+
+  function shareMessage(guest: Guest): string {
+    if (wedding === null) return ''
+    return (
+      `Hi ${guest.name}, you're invited to ` +
+      `${wedding.partner_one_name} & ${wedding.partner_two_name}'s wedding ` +
+      `on ${formatWeddingDate(wedding.wedding_date)} at ` +
+      `${wedding.venue_name}.\nOpen your invitation: ${guestUrl(guest)}`
+    )
+  }
+
+  async function handleCopyLink(guest: Guest) {
+    setError('')
+    setNotice('')
+    try {
+      await navigator.clipboard.writeText(guestUrl(guest))
+      setNotice('Guest link copied.')
+    } catch {
+      setError('Unable to copy the guest link.')
+    }
+  }
+
+  async function handleShareGuest(guest: Guest) {
+    setError('')
+    setNotice('')
+    try {
+      await api.put<Guest>(`/guests/${guest.id}/share`, { shared: true })
+      setNotice(
+        `${guest.name} marked shared. This does not confirm delivery or read.`,
+      )
+      reload()
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : 'Unable to mark the guest as shared.',
+      )
+    }
+  }
+
+  async function handleUnshareGuest(guest: Guest) {
+    setError('')
+    setNotice('')
+    try {
+      await api.put<Guest>(`/guests/${guest.id}/share`, { shared: false })
+      setNotice('Share mark cleared.')
+      reload()
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Unable to clear the share mark.',
+      )
+    }
+  }
+
   function categoryName(categoryId: string | null): string {
     if (categoryId === null) return 'Uncategorized'
     return (
@@ -340,6 +408,13 @@ export default function GuestsPage() {
 
             {error !== '' && <p className="error">{error}</p>}
             {notice !== '' && <p className="success">{notice}</p>}
+
+            {guests.length > 0 && (
+              <p className="muted">
+                “Marked shared” is a manual record. It does not confirm
+                delivery or read.
+              </p>
+            )}
 
             <div className="guest-toolbar">
               <label className="field">
@@ -443,10 +518,38 @@ export default function GuestsPage() {
                       <span className="muted">
                         {categoryName(guest.category_id)} ·{' '}
                         {guest.max_attendees}{' '}
-                        {guest.max_attendees === 1 ? 'attendee' : 'attendees'}
+                        {guest.max_attendees === 1 ? 'attendee' : 'attendees'} ·{' '}
+                        {guest.shared_at === null
+                          ? 'Not shared'
+                          : 'Marked shared'}
                       </span>
                     </div>
                     <div className="guest-row-actions">
+                      <button
+                        className="link"
+                        type="button"
+                        onClick={() => void handleCopyLink(guest)}
+                      >
+                        Copy link
+                      </button>
+                      <a
+                        className="link"
+                        href={`https://wa.me/?text=${encodeURIComponent(shareMessage(guest))}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => void handleShareGuest(guest)}
+                      >
+                        WhatsApp
+                      </a>
+                      {guest.shared_at !== null && (
+                        <button
+                          className="link"
+                          type="button"
+                          onClick={() => void handleUnshareGuest(guest)}
+                        >
+                          Undo
+                        </button>
+                      )}
                       <button
                         className="link"
                         type="button"

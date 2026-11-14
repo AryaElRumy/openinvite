@@ -76,3 +76,4 @@ class Guest(BaseModel, table=True):
     name: str
     invitation_code: str = Field(index=True, unique=True)
     max_attendees: int = Field(default=1)
+    shared_at: datetime | None = None

@@ -1,6 +1,7 @@
 import csv
 import io
 import secrets
+from datetime import datetime, timezone
 
 import openpyxl
 from fastapi import (
@@ -26,6 +27,7 @@ from app.schema.guest_schema import (
     GuestImportResult,
     GuestImportRow,
     GuestResponse,
+    GuestShareUpdate,
     GuestUpdate,
 )
 
@@ -347,6 +349,33 @@ def update_guest(
 
     for key, value in payload.model_dump().items():
         setattr(guest, key, value)
+    session.add(guest)
+    session.commit()
+    session.refresh(guest)
+    return guest
+
+
+@guest_router.put("/{guest_id}/share", response_model=GuestResponse)
+def share_guest(
+    guest_id: str,
+    payload: GuestShareUpdate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    wedding = _require_wedding(session, current_user.id)
+
+    guest = _get_guest(session, wedding.id, guest_id)
+    if guest is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Guest not found"
+        )
+
+    if payload.shared:
+        if guest.shared_at is None:
+            guest.shared_at = datetime.now(timezone.utc)
+    else:
+        guest.shared_at = None
+
     session.add(guest)
     session.commit()
     session.refresh(guest)

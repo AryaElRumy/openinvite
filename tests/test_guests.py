@@ -369,6 +369,47 @@ def test_import_is_owner_scoped(client):
     assert client.get("/api/guests").json() == []
 
 
+def test_mark_guest_shared_and_undo(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    guest = create_guest(client, "Ayu")
+
+    marked = client.put(f"/api/guests/{guest['id']}/share", json={"shared": True})
+    assert marked.status_code == 200
+    assert marked.json()["shared_at"] is not None
+
+    unshared = client.put(f"/api/guests/{guest['id']}/share", json={"shared": False})
+    assert unshared.status_code == 200
+    assert unshared.json()["shared_at"] is None
+
+
+def test_marking_shared_preserves_first_timestamp(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    guest = create_guest(client, "Ayu")
+
+    first = client.put(
+        f"/api/guests/{guest['id']}/share", json={"shared": True}
+    ).json()["shared_at"]
+    second = client.put(
+        f"/api/guests/{guest['id']}/share", json={"shared": True}
+    ).json()["shared_at"]
+    assert first == second
+
+
+def test_share_is_owner_scoped(client):
+    login_as(client, "first@example.com")
+    create_wedding(client)
+    guest = create_guest(client, "Ayu")
+    client.post("/api/auth/logout")
+
+    login_as(client, "second@example.com")
+    create_wedding(client)
+
+    response = client.put(f"/api/guests/{guest['id']}/share", json={"shared": True})
+    assert response.status_code == 404
+
+
 def test_guests_are_scoped_to_the_owner(client):
     login_as(client, "first@example.com")
     create_wedding(client)
