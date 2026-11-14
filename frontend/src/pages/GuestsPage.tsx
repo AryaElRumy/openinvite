@@ -21,6 +21,7 @@ export default function GuestsPage() {
 
   const [guestName, setGuestName] = useState('')
   const [guestCategoryId, setGuestCategoryId] = useState('')
+  const [guestMaxAttendees, setGuestMaxAttendees] = useState('1')
   const [editingGuestId, setEditingGuestId] = useState<string | null>(null)
 
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -64,12 +65,14 @@ export default function GuestsPage() {
     setEditingGuestId(null)
     setGuestName('')
     setGuestCategoryId('')
+    setGuestMaxAttendees('1')
   }
 
   function startEditGuest(guest: Guest) {
     setEditingGuestId(guest.id)
     setGuestName(guest.name)
     setGuestCategoryId(guest.category_id ?? '')
+    setGuestMaxAttendees(String(guest.max_attendees))
     setError('')
     setNotice('')
   }
@@ -77,7 +80,12 @@ export default function GuestsPage() {
   async function handleGuestSubmit(event: FormEvent) {
     event.preventDefault()
     const name = guestName.trim()
+    const maxAttendees = Number(guestMaxAttendees)
     if (name === '') return
+    if (!Number.isInteger(maxAttendees) || maxAttendees < 1) {
+      setError('Max attendees must be at least 1.')
+      return
+    }
 
     setError('')
     setNotice('')
@@ -86,6 +94,7 @@ export default function GuestsPage() {
     const payload: GuestPayload = {
       name,
       category_id: guestCategoryId === '' ? null : guestCategoryId,
+      max_attendees: maxAttendees,
     }
 
     try {
@@ -214,6 +223,10 @@ export default function GuestsPage() {
     )
   }
 
+  const totalCapacity = guests.reduce(
+    (total, guest) => total + guest.max_attendees,
+    0,
+  )
   const query = search.trim().toLowerCase()
   const visibleGuests = guests.filter(
     (guest) =>
@@ -252,6 +265,11 @@ export default function GuestsPage() {
           </p>
         ) : (
           <>
+            <p className="muted">
+              {guests.length} invitation{guests.length === 1 ? '' : 's'} ·{' '}
+              {totalCapacity} attendee capacity
+            </p>
+
             <div className="guest-toolbar">
               <label className="field">
                 <span>Search guests</span>
@@ -308,6 +326,19 @@ export default function GuestsPage() {
                     ))}
                   </select>
                 </label>
+
+                <label className="field">
+                  <span>Max attendees</span>
+                  <input
+                    type="number"
+                    min={1}
+                    inputMode="numeric"
+                    value={guestMaxAttendees}
+                    onChange={(event) =>
+                      setGuestMaxAttendees(event.target.value)
+                    }
+                  />
+                </label>
               </div>
 
               {error !== '' && <p className="error">{error}</p>}
@@ -342,7 +373,9 @@ export default function GuestsPage() {
                     <div className="guest-row-info">
                       <strong>{guest.name}</strong>
                       <span className="muted">
-                        {categoryName(guest.category_id)}
+                        {categoryName(guest.category_id)} ·{' '}
+                        {guest.max_attendees}{' '}
+                        {guest.max_attendees === 1 ? 'attendee' : 'attendees'}
                       </span>
                     </div>
                     <div className="guest-row-actions">

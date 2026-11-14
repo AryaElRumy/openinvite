@@ -27,6 +27,7 @@ class GuestCategoryResponse(BaseModel):
 class GuestCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     category_id: str | None = None
+    max_attendees: int = Field(default=1, ge=1)
 
     @field_validator("name")
     @classmethod
@@ -47,3 +48,5 @@ class GuestResponse(BaseModel):
     id: str
     name: str
     category_id: str | None
+    invitation_code: str
+    max_attendees: int

@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import JSON, Column, UniqueConstraint
+from sqlalchemy import JSON, CheckConstraint, Column, UniqueConstraint
 from sqlmodel import Field
 
 from app.core.models import BaseModel
@@ -65,9 +65,14 @@ class GuestCategory(BaseModel, table=True):
 
 class Guest(BaseModel, table=True):
     __tablename__ = "guests"
+    __table_args__ = (
+        CheckConstraint("max_attendees >= 1", name="ck_guests_max_attendees_positive"),
+    )
 
     wedding_id: str = Field(foreign_key="weddings.id", index=True)
     category_id: str | None = Field(
         default=None, foreign_key="guest_categories.id", index=True
     )
     name: str
+    invitation_code: str = Field(index=True, unique=True)
+    max_attendees: int = Field(default=1)

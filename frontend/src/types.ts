@@ -69,9 +69,12 @@ export type Guest = {
   id: string
   name: string
   category_id: string | null
+  invitation_code: string
+  max_attendees: number
 }
 
 export type GuestPayload = {
   name: string
   category_id: string | null
+  max_attendees: number
 }

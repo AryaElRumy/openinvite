@@ -1,3 +1,5 @@
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
 from sqlmodel import Session, select
@@ -53,6 +55,16 @@ def _category_name_taken(
     return session.exec(statement).first() is not None
 
 
+def _generate_invitation_code(session: Session) -> str:
+    while True:
+        code = secrets.token_urlsafe(18)
+        existing = session.exec(
+            select(Guest).where(Guest.invitation_code == code)
+        ).first()
+        if existing is None:
+            return code
+
+
 def _require_wedding(session: Session, owner_id: str) -> Wedding:
     wedding = _get_owner_wedding(session, owner_id)
     if wedding is None:
@@ -100,7 +112,11 @@ def create_guest(
                 detail="Category not found",
             )
 
-    guest = Guest(wedding_id=wedding.id, **payload.model_dump())
+    guest = Guest(
+        wedding_id=wedding.id,
+        invitation_code=_generate_invitation_code(session),
+        **payload.model_dump(),
+    )
     session.add(guest)
     session.commit()
     session.refresh(guest)

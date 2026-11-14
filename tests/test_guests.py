@@ -27,10 +27,11 @@ def create_category(client, name):
     return response.json()
 
 
-def create_guest(client, name, category_id=None):
-    response = client.post(
-        "/api/guests", json={"name": name, "category_id": category_id}
-    )
+def create_guest(client, name, category_id=None, max_attendees=None):
+    payload = {"name": name, "category_id": category_id}
+    if max_attendees is not None:
+        payload["max_attendees"] = max_attendees
+    response = client.post("/api/guests", json=payload)
     assert response.status_code == 201
     return response.json()
 
@@ -75,6 +76,77 @@ def test_update_guest_name_and_category(client):
     assert updated.status_code == 200
     assert updated.json()["name"] == "Ayu Lestari"
     assert updated.json()["category_id"] == category["id"]
+
+
+def test_guest_gets_opaque_code_and_default_quota(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+
+    guest = create_guest(client, "Ayu")
+
+    assert guest["max_attendees"] == 1
+    assert len(guest["invitation_code"]) >= 20
+    assert "Ayu" not in guest["invitation_code"]
+    assert (
+        client.get("/api/guests").json()[0]["invitation_code"]
+        == guest["invitation_code"]
+    )
+
+
+def test_invitation_codes_are_unique(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+
+    first = create_guest(client, "Ayu")
+    second = create_guest(client, "Bima")
+
+    assert first["invitation_code"] != second["invitation_code"]
+
+
+def test_update_preserves_invitation_code_and_updates_quota(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    guest = create_guest(client, "Ayu")
+
+    updated = client.put(
+        f"/api/guests/{guest['id']}",
+        json={"name": "Ayu Lestari", "category_id": None, "max_attendees": 4},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["invitation_code"] == guest["invitation_code"]
+    assert updated.json()["max_attendees"] == 4
+
+
+def test_quota_must_be_at_least_one(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    guest = create_guest(client, "Ayu")
+
+    assert (
+        client.post(
+            "/api/guests", json={"name": "Bima", "max_attendees": 0}
+        ).status_code
+        == 422
+    )
+    assert (
+        client.put(
+            f"/api/guests/{guest['id']}",
+            json={"name": "Ayu", "max_attendees": 0},
+        ).status_code
+        == 422
+    )
+
+
+def test_capacity_total_matches_guest_quotas(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+
+    create_guest(client, "Ayu", max_attendees=1)
+    create_guest(client, "Bima", max_attendees=3)
+    create_guest(client, "Citra", max_attendees=2)
+
+    guests = client.get("/api/guests").json()
+    assert sum(guest["max_attendees"] for guest in guests) == 6
 
 
 def test_guest_name_cannot_be_blank(client):
