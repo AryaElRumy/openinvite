@@ -56,6 +56,7 @@ class GuestResponse(BaseModel):
     max_attendees: int
     shared_at: datetime | None
     rsvp: RsvpResponse | None = None
+    checked_in_at: datetime | None = None
 
 
 class GuestShareUpdate(BaseModel):

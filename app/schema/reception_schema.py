@@ -27,3 +27,14 @@ class ReceptionistGuestResponse(BaseModel):
     name: str
     max_attendees: int
     invitation_code: str
+    checked_in_at: datetime | None
+
+
+class CheckInRequest(BaseModel):
+    code: str = Field(min_length=1, max_length=120)
+
+
+class CheckInResponse(BaseModel):
+    guest: ReceptionistGuestResponse
+    checked_in_at: datetime
+    already_checked_in: bool

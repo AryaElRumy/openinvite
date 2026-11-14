@@ -6,9 +6,18 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlmodel import Session, select
 
 from app.core.security import get_current_user
-from app.models.database import Guest, Invitation, ReceptionistToken, User, Wedding
+from app.models.database import (
+    CheckIn,
+    Guest,
+    Invitation,
+    ReceptionistToken,
+    User,
+    Wedding,
+)
 from app.models.engine import get_session
 from app.schema.reception_schema import (
+    CheckInRequest,
+    CheckInResponse,
     ReceptionistGuestResponse,
     ReceptionistTokenResponse,
     ReceptionistTokenStatus,
@@ -78,6 +87,50 @@ def _get_token_by_hash(session: Session, token_hash: str) -> ReceptionistToken |
     return session.exec(
         select(ReceptionistToken).where(ReceptionistToken.token_hash == token_hash)
     ).first()
+
+
+def _latest_active_check_in(session: Session, guest_id: str) -> CheckIn | None:
+    return session.exec(
+        select(CheckIn)
+        .where(CheckIn.guest_id == guest_id, CheckIn.undone_at.is_(None))
+        .order_by(CheckIn.checked_in_at.desc())
+    ).first()
+
+
+def _reception_guest(session: Session, guest: Guest) -> ReceptionistGuestResponse:
+    check_in = _latest_active_check_in(session, guest.id)
+    return ReceptionistGuestResponse(
+        id=guest.id,
+        name=guest.name,
+        max_attendees=guest.max_attendees,
+        invitation_code=guest.invitation_code,
+        checked_in_at=check_in.checked_in_at if check_in is not None else None,
+    )
+
+
+def _published_guest(session: Session, wedding: Wedding, code: str) -> Guest:
+    invitation = session.exec(
+        select(Invitation).where(Invitation.wedding_id == wedding.id)
+    ).first()
+    if invitation is None or invitation.published_snapshot is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invitation not found",
+        )
+
+    guest = session.exec(
+        select(Guest).where(
+            Guest.invitation_code == code,
+            Guest.wedding_id == wedding.id,
+        )
+    ).first()
+    if guest is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invitation not found",
+        )
+
+    return guest
 
 
 @receptionist_router.get("", response_model=ReceptionistTokenStatus)
@@ -168,7 +221,30 @@ def reception_guests(
     if search is not None and search.strip() != "":
         statement = statement.where(Guest.name.ilike(f"%{search.strip()}%"))
     statement = statement.order_by(Guest.name)
-    return session.exec(statement).all()
+    guests = session.exec(statement).all()
+
+    check_ins = session.exec(
+        select(CheckIn)
+        .join(Guest, CheckIn.guest_id == Guest.id)
+        .where(Guest.wedding_id == wedding.id, CheckIn.undone_at.is_(None))
+        .order_by(CheckIn.checked_in_at)
+    ).all()
+    check_in_by_guest = {check_in.guest_id: check_in for check_in in check_ins}
+
+    return [
+        ReceptionistGuestResponse(
+            id=guest.id,
+            name=guest.name,
+            max_attendees=guest.max_attendees,
+            invitation_code=guest.invitation_code,
+            checked_in_at=(
+                check_in_by_guest[guest.id].checked_in_at
+                if guest.id in check_in_by_guest
+                else None
+            ),
+        )
+        for guest in guests
+    ]
 
 
 @reception_router.post("/validate", response_model=ReceptionistGuestResponse)
@@ -177,25 +253,37 @@ def validate_qr(
     wedding: Wedding = Depends(require_receptionist),
     session: Session = Depends(get_session),
 ):
-    invitation = session.exec(
-        select(Invitation).where(Invitation.wedding_id == wedding.id)
-    ).first()
-    if invitation is None or invitation.published_snapshot is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invitation not found",
+    guest = _published_guest(session, wedding, payload.code)
+    return _reception_guest(session, guest)
+
+
+@reception_router.post("/check-in", response_model=CheckInResponse)
+def check_in_guest(
+    payload: CheckInRequest,
+    wedding: Wedding = Depends(require_receptionist),
+    session: Session = Depends(get_session),
+):
+    guest = _published_guest(session, wedding, payload.code)
+
+    latest = _latest_active_check_in(session, guest.id)
+    if latest is not None:
+        return CheckInResponse(
+            guest=_reception_guest(session, guest),
+            checked_in_at=latest.checked_in_at,
+            already_checked_in=True,
         )
 
-    guest = session.exec(
-        select(Guest).where(
-            Guest.invitation_code == payload.code,
-            Guest.wedding_id == wedding.id,
-        )
-    ).first()
-    if guest is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invitation not found",
-        )
+    check_in = CheckIn(
+        guest_id=guest.id,
+        checked_in_at=datetime.now(timezone.utc),
+        source="receptionist",
+    )
+    session.add(check_in)
+    session.commit()
+    session.refresh(check_in)
 
-    return guest
+    return CheckInResponse(
+        guest=_reception_guest(session, guest),
+        checked_in_at=check_in.checked_in_at,
+        already_checked_in=False,
+    )

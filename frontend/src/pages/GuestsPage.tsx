@@ -383,6 +383,22 @@ export default function GuestsPage() {
     }
   }
 
+  async function handleUndoCheckIn(guest: Guest) {
+    if (!window.confirm(`Undo the check-in for ${guest.name}?`)) return
+
+    setError('')
+    setNotice('')
+    try {
+      await api.delete(`/guests/${guest.id}/check-in`)
+      setNotice('Check-in undone.')
+      reload()
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Unable to undo the check-in.',
+      )
+    }
+  }
+
   async function handleCreateReceptionist() {
     if (
       receptionistActive &&
@@ -478,6 +494,9 @@ export default function GuestsPage() {
     (guest) => guest.rsvp?.status === 'declined',
   ).length
   const notRespondedCount = guests.length - attendingCount - declinedCount
+  const checkedInCount = guests.filter(
+    (guest) => guest.checked_in_at !== null,
+  ).length
   const query = search.trim().toLowerCase()
   const visibleGuests = guests.filter(
     (guest) =>
@@ -532,7 +551,7 @@ export default function GuestsPage() {
             {guests.length > 0 && (
               <p className="muted">
                 {attendingCount} attending · {declinedCount} declined ·{' '}
-                {notRespondedCount} not responded
+                {notRespondedCount} not responded · {checkedInCount} checked in
               </p>
             )}
 
@@ -688,6 +707,12 @@ export default function GuestsPage() {
                         {guest.rsvp !== null &&
                           ` · ${new Date(guest.rsvp.responded_at).toLocaleDateString()}`}
                       </span>
+                      <span className="muted">
+                        Check-in:{' '}
+                        {guest.checked_in_at === null
+                          ? 'Not checked in'
+                          : `Checked in ${new Date(guest.checked_in_at).toLocaleString()}`}
+                      </span>
                     </div>
                     <div className="guest-row-actions">
                       <button
@@ -722,6 +747,15 @@ export default function GuestsPage() {
                           onClick={() => void handleClearRsvp(guest)}
                         >
                           Clear RSVP
+                        </button>
+                      )}
+                      {guest.checked_in_at !== null && (
+                        <button
+                          className="link"
+                          type="button"
+                          onClick={() => void handleUndoCheckIn(guest)}
+                        >
+                          Undo check-in
                         </button>
                       )}
                       <button

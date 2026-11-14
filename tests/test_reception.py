@@ -265,3 +265,113 @@ def test_validate_requires_receptionist_token(client):
         json={"code": guest["invitation_code"]},
     )
     assert response.status_code == 401
+
+
+def setup_check_in(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    publish_invitation(client)
+    guest = create_guest(client, "Ayu")
+    token = create_token(client)
+    client.post("/api/auth/logout")
+    return guest, token
+
+
+def test_check_in_is_idempotent(client):
+    guest, token = setup_check_in(client)
+    headers = token_headers(token)
+    url = "/api/reception/check-in"
+
+    first = client.post(url, json={"code": guest["invitation_code"]}, headers=headers)
+    assert first.status_code == 200
+    assert first.json()["already_checked_in"] is False
+    assert first.json()["checked_in_at"] is not None
+    assert first.json()["guest"]["checked_in_at"] is not None
+
+    second = client.post(url, json={"code": guest["invitation_code"]}, headers=headers)
+    assert second.status_code == 200
+    assert second.json()["already_checked_in"] is True
+    assert second.json()["checked_in_at"] == first.json()["checked_in_at"]
+
+    guests = client.get("/api/reception/guests", headers=headers).json()
+    assert guests[0]["checked_in_at"] is not None
+
+
+def test_check_in_unknown_code_returns_404(client):
+    guest, token = setup_check_in(client)
+
+    response = client.post(
+        "/api/reception/check-in",
+        json={"code": "not-a-code"},
+        headers=token_headers(token),
+    )
+    assert response.status_code == 404
+
+
+def test_check_in_requires_published_invitation(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    guest = create_guest(client, "Ayu")
+    token = create_token(client)
+    client.post("/api/auth/logout")
+
+    response = client.post(
+        "/api/reception/check-in",
+        json={"code": guest["invitation_code"]},
+        headers=token_headers(token),
+    )
+    assert response.status_code == 404
+
+
+def test_check_in_requires_receptionist_token(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    publish_invitation(client)
+    guest = create_guest(client, "Ayu")
+
+    response = client.post(
+        "/api/reception/check-in",
+        json={"code": guest["invitation_code"]},
+    )
+    assert response.status_code == 401
+
+
+def test_owner_can_see_and_undo_check_in(client):
+    login_as(client, "couple@example.com")
+    create_wedding(client)
+    publish_invitation(client)
+    guest = create_guest(client, "Ayu")
+    token = create_token(client)
+
+    client.post(
+        "/api/reception/check-in",
+        json={"code": guest["invitation_code"]},
+        headers=token_headers(token),
+    )
+
+    guests = client.get("/api/guests").json()
+    assert guests[0]["checked_in_at"] is not None
+
+    undone = client.delete(f"/api/guests/{guest['id']}/check-in")
+    assert undone.status_code == 204
+    assert client.get("/api/guests").json()[0]["checked_in_at"] is None
+
+
+def test_undo_check_in_is_owner_scoped(client):
+    login_as(client, "first@example.com")
+    create_wedding(client)
+    publish_invitation(client)
+    guest = create_guest(client, "Ayu")
+    token = create_token(client)
+    client.post(
+        "/api/reception/check-in",
+        json={"code": guest["invitation_code"]},
+        headers=token_headers(token),
+    )
+    client.post("/api/auth/logout")
+
+    login_as(client, "second@example.com")
+    create_wedding(client)
+
+    response = client.delete(f"/api/guests/{guest['id']}/check-in")
+    assert response.status_code == 404

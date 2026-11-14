@@ -99,3 +99,12 @@ class ReceptionistToken(BaseModel, table=True):
     token_hash: str = Field(unique=True, index=True)
     revoked_at: datetime | None = None
     last_used_at: datetime | None = None
+
+
+class CheckIn(BaseModel, table=True):
+    __tablename__ = "check_ins"
+
+    guest_id: str = Field(foreign_key="guests.id", index=True)
+    checked_in_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    source: str = "receptionist"
+    undone_at: datetime | None = None

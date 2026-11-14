@@ -1,7 +1,11 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ApiError, api } from '../api'
-import type { ReceptionistGuest, Wedding } from '../types'
+import type {
+  CheckInResponse,
+  ReceptionistGuest,
+  Wedding,
+} from '../types'
 
 const QrScanner = lazy(() => import('../components/QrScanner'))
 
@@ -26,6 +30,12 @@ export default function ReceptionPage() {
   const [scanning, setScanning] = useState(false)
   const [scanResult, setScanResult] = useState<ReceptionistGuest | null>(null)
   const [scanError, setScanError] = useState('')
+  const [scannedCode, setScannedCode] = useState('')
+  const [checkInResult, setCheckInResult] = useState<CheckInResponse | null>(
+    null,
+  )
+  const [checkingIn, setCheckingIn] = useState(false)
+  const [checkInError, setCheckInError] = useState('')
 
   useEffect(() => {
     if (!token) return
@@ -63,6 +73,9 @@ export default function ReceptionPage() {
       setScanning(false)
       setScanResult(null)
       setScanError('')
+      setScannedCode(code)
+      setCheckInResult(null)
+      setCheckInError('')
 
       try {
         const guest = await api.postWithToken<ReceptionistGuest>(
@@ -81,6 +94,29 @@ export default function ReceptionPage() {
     },
     [token],
   )
+
+  const handleCheckIn = useCallback(async () => {
+    if (!token || scannedCode === '') return
+
+    setCheckingIn(true)
+    setCheckInError('')
+
+    try {
+      const result = await api.postWithToken<CheckInResponse>(
+        '/reception/check-in',
+        token,
+        { code: scannedCode },
+      )
+      setCheckInResult(result)
+      setScanResult(result.guest)
+    } catch (err) {
+      setCheckInError(
+        err instanceof ApiError ? err.message : 'Unable to check in the guest.',
+      )
+    } finally {
+      setCheckingIn(false)
+    }
+  }, [token, scannedCode])
 
   if (!token) {
     return (
@@ -154,11 +190,46 @@ export default function ReceptionPage() {
             )}
 
             {scanResult && (
-              <p className="success">
-                Valid: {scanResult.name} · up to {scanResult.max_attendees}{' '}
-                {scanResult.max_attendees === 1 ? 'guest' : 'guests'}.
+              <p
+                className={
+                  scanResult.checked_in_at !== null ? 'muted' : 'success'
+                }
+              >
+                {scanResult.checked_in_at !== null
+                  ? `Already checked in at ${new Date(
+                      scanResult.checked_in_at,
+                    ).toLocaleString()}.`
+                  : `${scanResult.name} · up to ${scanResult.max_attendees} ${
+                      scanResult.max_attendees === 1 ? 'guest' : 'guests'
+                    }.`}
               </p>
             )}
+
+            {scanResult !== null &&
+              scanResult.checked_in_at === null &&
+              checkInResult === null && (
+                <div className="actions">
+                  <button
+                    className="button"
+                    type="button"
+                    disabled={checkingIn}
+                    onClick={() => void handleCheckIn()}
+                  >
+                    {checkingIn ? 'Checking in…' : 'Check in'}
+                  </button>
+                </div>
+              )}
+
+            {checkInResult !== null && (
+              <p className="success">
+                {checkInResult.already_checked_in
+                  ? 'Already checked in'
+                  : 'Checked in'}{' '}
+                at {new Date(checkInResult.checked_in_at).toLocaleString()}.
+              </p>
+            )}
+
+            {checkInError !== '' && <p className="error">{checkInError}</p>}
             {scanError !== '' && <p className="error">{scanError}</p>}
 
             <label className="field">
@@ -183,6 +254,13 @@ export default function ReceptionPage() {
                         Up to {guest.max_attendees}{' '}
                         {guest.max_attendees === 1 ? 'guest' : 'guests'} · Code{' '}
                         {guest.invitation_code}
+                      </span>
+                      <span className="muted">
+                        {guest.checked_in_at !== null
+                          ? `Checked in ${new Date(
+                              guest.checked_in_at,
+                            ).toLocaleString()}`
+                          : 'Not checked in'}
                       </span>
                     </div>
                   </li>

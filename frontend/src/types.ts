@@ -91,6 +91,7 @@ export type Guest = {
   max_attendees: number
   shared_at: string | null
   rsvp: Rsvp | null
+  checked_in_at: string | null
 }
 
 export type GuestPayload = {
@@ -131,4 +132,11 @@ export type ReceptionistGuest = {
   name: string
   max_attendees: number
   invitation_code: string
+  checked_in_at: string | null
+}
+
+export type CheckInResponse = {
+  guest: ReceptionistGuest
+  checked_in_at: string
+  already_checked_in: boolean
 }

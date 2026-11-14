@@ -17,7 +17,14 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.core.security import get_current_user
-from app.models.database import Guest, GuestCategory, Rsvp, User, Wedding
+from app.models.database import (
+    CheckIn,
+    Guest,
+    GuestCategory,
+    Rsvp,
+    User,
+    Wedding,
+)
 from app.models.engine import get_session
 from app.schema.guest_schema import (
     GuestCategoryCreate,
@@ -63,10 +70,28 @@ def _rsvp_for_guest(session: Session, guest_id: str) -> Rsvp | None:
     return session.exec(select(Rsvp).where(Rsvp.guest_id == guest_id)).first()
 
 
-def _guest_response(guest: Guest, rsvp: Rsvp | None) -> GuestResponse:
+def _latest_active_check_in(session: Session, guest_id: str) -> CheckIn | None:
+    return session.exec(
+        select(CheckIn)
+        .where(CheckIn.guest_id == guest_id, CheckIn.undone_at.is_(None))
+        .order_by(CheckIn.checked_in_at.desc())
+    ).first()
+
+
+def _checked_in_at(session: Session, guest_id: str) -> datetime | None:
+    check_in = _latest_active_check_in(session, guest_id)
+    return check_in.checked_in_at if check_in is not None else None
+
+
+def _guest_response(
+    guest: Guest,
+    rsvp: Rsvp | None,
+    checked_in_at: datetime | None = None,
+) -> GuestResponse:
     return GuestResponse.model_validate(guest).model_copy(
         update={
-            "rsvp": (RsvpResponse.model_validate(rsvp) if rsvp is not None else None)
+            "rsvp": (RsvpResponse.model_validate(rsvp) if rsvp is not None else None),
+            "checked_in_at": checked_in_at,
         }
     )
 
@@ -253,7 +278,27 @@ def list_guests(
         select(Rsvp).where(Rsvp.guest_id.in_([guest.id for guest in guests]))
     ).all()
     rsvp_by_guest = {rsvp.guest_id: rsvp for rsvp in rsvps}
-    return [_guest_response(guest, rsvp_by_guest.get(guest.id)) for guest in guests]
+
+    check_ins = session.exec(
+        select(CheckIn)
+        .join(Guest, CheckIn.guest_id == Guest.id)
+        .where(Guest.wedding_id == wedding.id, CheckIn.undone_at.is_(None))
+        .order_by(CheckIn.checked_in_at)
+    ).all()
+    check_in_by_guest = {check_in.guest_id: check_in for check_in in check_ins}
+
+    return [
+        _guest_response(
+            guest,
+            rsvp_by_guest.get(guest.id),
+            (
+                check_in_by_guest[guest.id].checked_in_at
+                if guest.id in check_in_by_guest
+                else None
+            ),
+        )
+        for guest in guests
+    ]
 
 
 @guest_router.post(
@@ -282,7 +327,11 @@ def create_guest(
     session.add(guest)
     session.commit()
     session.refresh(guest)
-    return _guest_response(guest, _rsvp_for_guest(session, guest.id))
+    return _guest_response(
+        guest,
+        _rsvp_for_guest(session, guest.id),
+        _checked_in_at(session, guest.id),
+    )
 
 
 @guest_router.post("/import", response_model=GuestImportResult)
@@ -376,7 +425,11 @@ def update_guest(
     session.add(guest)
     session.commit()
     session.refresh(guest)
-    return _guest_response(guest, _rsvp_for_guest(session, guest.id))
+    return _guest_response(
+        guest,
+        _rsvp_for_guest(session, guest.id),
+        _checked_in_at(session, guest.id),
+    )
 
 
 @guest_router.put("/{guest_id}/share", response_model=GuestResponse)
@@ -403,7 +456,32 @@ def share_guest(
     session.add(guest)
     session.commit()
     session.refresh(guest)
-    return _guest_response(guest, _rsvp_for_guest(session, guest.id))
+    return _guest_response(
+        guest,
+        _rsvp_for_guest(session, guest.id),
+        _checked_in_at(session, guest.id),
+    )
+
+
+@guest_router.delete("/{guest_id}/check-in", status_code=status.HTTP_204_NO_CONTENT)
+def undo_guest_check_in(
+    guest_id: str,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    wedding = _require_wedding(session, current_user.id)
+
+    guest = _get_guest(session, wedding.id, guest_id)
+    if guest is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Guest not found"
+        )
+
+    check_in = _latest_active_check_in(session, guest.id)
+    if check_in is not None:
+        check_in.undone_at = datetime.now(timezone.utc)
+        session.add(check_in)
+        session.commit()
 
 
 @guest_router.delete("/{guest_id}/rsvp", status_code=status.HTTP_204_NO_CONTENT)
