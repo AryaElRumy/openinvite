@@ -60,6 +60,15 @@ export type PublicInvitation = {
   invitation: Invitation
 }
 
+export type PublicGuest = {
+  name: string
+  max_attendees: number
+}
+
+export type PublicGuestInvitation = PublicInvitation & {
+  guest: PublicGuest
+}
+
 export type GuestCategory = {
   id: string
   name: string

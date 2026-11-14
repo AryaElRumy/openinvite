@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ApiError, api } from '../api'
 import InvitationTemplate from '../components/InvitationTemplate'
-import type { PublicInvitation } from '../types'
+import type { PublicGuest, PublicGuestInvitation, PublicInvitation } from '../types'
 
 export default function PublicInvitationPage() {
-  const { slug } = useParams<{ slug: string }>()
+  const { slug, code } = useParams<{ slug: string; code?: string }>()
   const [invitation, setInvitation] = useState<PublicInvitation | null>(null)
+  const [guest, setGuest] = useState<PublicGuest | null>(null)
   const [loading, setLoading] = useState(slug !== undefined)
   const [notFound, setNotFound] = useState(false)
 
@@ -15,12 +16,17 @@ export default function PublicInvitationPage() {
 
     let cancelled = false
 
+    const path =
+      code === undefined
+        ? `/public/invitations/${encodeURIComponent(slug)}`
+        : `/public/invitations/${encodeURIComponent(slug)}/guests/${encodeURIComponent(code)}`
+
     api
-      .get<PublicInvitation>(
-        `/public/invitations/${encodeURIComponent(slug)}`,
-      )
+      .get<PublicGuestInvitation | PublicInvitation>(path)
       .then((data) => {
-        if (!cancelled) setInvitation(data)
+        if (cancelled) return
+        setInvitation(data)
+        setGuest('guest' in data ? data.guest : null)
       })
       .catch((err) => {
         if (!cancelled && err instanceof ApiError && err.status === 404) {
@@ -34,7 +40,7 @@ export default function PublicInvitationPage() {
     return () => {
       cancelled = true
     }
-  }, [slug])
+  }, [slug, code])
 
   if (!slug) {
     return (
@@ -63,6 +69,7 @@ export default function PublicInvitationPage() {
           <InvitationTemplate
             wedding={invitation.wedding}
             invitation={invitation.invitation}
+            guest={guest}
           />
         )
       )}

@@ -3,6 +3,7 @@ import type { Invitation, Wedding } from '../types'
 type Props = {
   wedding: Wedding
   invitation: Invitation
+  guest?: { name: string; max_attendees: number } | null
 }
 
 function formatDate(value: string): string {
@@ -11,7 +12,11 @@ function formatDate(value: string): string {
   return date.toLocaleDateString(undefined, { dateStyle: 'long' })
 }
 
-export default function InvitationTemplate({ wedding, invitation }: Props) {
+export default function InvitationTemplate({
+  wedding,
+  invitation,
+  guest = null,
+}: Props) {
   const names = `${wedding.partner_one_name} & ${wedding.partner_two_name}`
   const headline = invitation.headline.trim() === '' ? names : invitation.headline
 
@@ -26,6 +31,15 @@ export default function InvitationTemplate({ wedding, invitation }: Props) {
       )}
 
       <header className="invitation-hero">
+        {guest && (
+          <>
+            <p className="invitation-guest">Dear {guest.name}</p>
+            <p className="invitation-quota">
+              Admits up to {guest.max_attendees}{' '}
+              {guest.max_attendees === 1 ? 'guest' : 'guests'}.
+            </p>
+          </>
+        )}
         <p className="invitation-kicker">The Wedding Of</p>
         <h1>{headline}</h1>
         <p className="invitation-date">{formatDate(wedding.wedding_date)}</p>

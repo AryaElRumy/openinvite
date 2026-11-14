@@ -48,6 +48,7 @@ export default function App() {
             }
           />
           <Route path="/i/:slug" element={<PublicInvitationPage />} />
+          <Route path="/i/:slug/:code" element={<PublicInvitationPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

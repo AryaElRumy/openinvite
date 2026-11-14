@@ -258,6 +258,17 @@ input:disabled {
   text-align: center;
 }
 
+.invitation-guest {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.invitation-quota {
+  margin: 0.2rem 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .invitation-kicker {
   margin: 0;
   color: var(--muted);

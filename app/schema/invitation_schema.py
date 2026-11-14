@@ -67,3 +67,12 @@ class PublicInvitationResponse(BaseModel):
     published_at: datetime
     wedding: WeddingResponse
     invitation: InvitationResponse
+
+
+class PublicGuestResponse(BaseModel):
+    name: str
+    max_attendees: int
+
+
+class PublicGuestInvitationResponse(PublicInvitationResponse):
+    guest: PublicGuestResponse
