@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { BookOpen, CalendarDays, Heart, LayoutDashboard, LogOut, Menu, PenLine, Users, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu } from '@/components/ui/sidebar'
 import { useAuth } from '@/auth'
@@ -36,9 +37,10 @@ export function AppTopBar({
     <>
       <SidebarNavigation active={active} logout={logout} />
       {open && <><div className="fixed inset-0 z-30 bg-foreground/35 lg:hidden" onClick={() => setOpen(false)} /><SidebarNavigation active={active} logout={logout} mobile onNavigate={() => setOpen(false)} /></>}
-      <header className="sticky top-0 z-20 mb-10 flex items-center justify-between border-b border-border/80 bg-background/90 py-3 backdrop-blur-xl lg:hidden">
-        <span className="font-semibold tracking-tight">openinvite<span className="text-primary">.</span></span>
-        <Button variant="outline" size="icon" aria-label="Open navigation" onClick={() => setOpen(true)}><Menu className="size-4" /></Button>
+      <header className="sticky top-0 z-20 mb-10 flex items-center justify-end border-b border-border/80 bg-background/90 py-3 backdrop-blur-xl">
+        <span className="mr-auto font-semibold tracking-tight lg:hidden">openinvite<span className="text-primary">.</span></span>
+        <ThemeToggle />
+        <Button className="lg:hidden" variant="outline" size="icon" aria-label="Open navigation" onClick={() => setOpen(true)}><Menu className="size-4" /></Button>
       </header>
     </>
   )
