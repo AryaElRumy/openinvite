@@ -33,7 +33,7 @@ export default function PreviewPage() {
         if (err instanceof ApiError && err.status === 404) {
           setNeedsWedding(true)
         } else {
-          setError(err instanceof ApiError ? err.message : 'Unable to load preview')
+          setError(err instanceof ApiError ? err.message : 'Gagal memuat pratinjau. Coba lagi.')
         }
       })
       .finally(() => {
@@ -51,21 +51,21 @@ export default function PreviewPage() {
 
       <Card className="mb-4">
         <CardHeader>
-          <CardTitle className="font-serif text-2xl">Preview</CardTitle>
+          <CardTitle className="font-serif text-2xl">Pratinjau</CardTitle>
           <CardDescription>
-            The saved draft, exactly as guests will see it.
+            Draf tersimpan, persis seperti yang dilihat tamu.
           </CardDescription>
         </CardHeader>
       </Card>
 
       {loading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-muted-foreground">Memuat…</p>
       ) : needsWedding ? (
         <Card>
           <CardContent className="flex flex-wrap items-center justify-between gap-4">
-            <p className="text-sm">Set up your wedding first.</p>
+            <p className="text-sm">Atur data pernikahanmu dulu.</p>
             <Button asChild size="sm">
-              <Link to="/">Go to dashboard</Link>
+              <Link to="/">Ke ringkasan</Link>
             </Button>
           </CardContent>
         </Card>

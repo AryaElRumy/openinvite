@@ -39,7 +39,7 @@ export default function GuestbookPage() {
           setError(
             err instanceof ApiError
               ? err.message
-              : 'Unable to load guestbook access.',
+              : 'Gagal memuat akses buku tamu. Coba lagi.',
           )
         }
       })
@@ -56,7 +56,7 @@ export default function GuestbookPage() {
     if (
       status?.active &&
       !window.confirm(
-        'Replace the current guestbook link? The old link will stop working.',
+        'Ganti tautan buku tamu saat ini? Tautan lama tidak akan bisa dipakai lagi.',
       )
     ) {
       return
@@ -70,12 +70,12 @@ export default function GuestbookPage() {
       const response = await api.post<ReceptionistTokenResponse>('/receptionist')
       setToken(response.token)
       setStatus(response)
-      setNotice('Guestbook link created. Copy it now; it will not be shown again.')
+      setNotice('Tautan buku tamu sudah dibuat. Salin sekarang karena tidak akan ditampilkan lagi.')
     } catch (err) {
       setError(
         err instanceof ApiError
           ? err.message
-          : 'Unable to create guestbook access.',
+          : 'Gagal membuat akses buku tamu. Coba lagi.',
       )
     } finally {
       setSaving(false)
@@ -83,7 +83,7 @@ export default function GuestbookPage() {
   }
 
   async function revokeAccess() {
-    if (!window.confirm('Revoke guestbook access?')) return
+    if (!window.confirm('Cabut akses buku tamu?')) return
 
     setError('')
     setNotice('')
@@ -93,12 +93,12 @@ export default function GuestbookPage() {
       await api.delete('/receptionist')
       setToken(null)
       setStatus(null)
-      setNotice('Guestbook access revoked.')
+      setNotice('Akses buku tamu sudah dicabut.')
     } catch (err) {
       setError(
         err instanceof ApiError
           ? err.message
-          : 'Unable to revoke guestbook access.',
+          : 'Gagal mencabut akses buku tamu. Coba lagi.',
       )
     } finally {
       setSaving(false)
@@ -110,9 +110,9 @@ export default function GuestbookPage() {
 
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/reception/${token}`)
-      setNotice('Guestbook link copied.')
+      setNotice('Tautan buku tamu disalin.')
     } catch {
-      setError('Unable to copy the guestbook link.')
+      setError('Gagal menyalin tautan buku tamu.')
     }
   }
 
@@ -124,14 +124,14 @@ export default function GuestbookPage() {
 
       <section className="mb-8 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
         <div>
-          <p className="app-kicker mb-3">Event day</p>
-          <h1 className="max-w-xl text-4xl sm:text-5xl">Guestbook access</h1>
+          <p className="app-kicker mb-3">Hari acara</p>
+          <h1 className="max-w-xl text-4xl sm:text-5xl">Akses buku tamu</h1>
           <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">
-            Give your reception team a private link to look up guests and record arrivals.
+            Beri tim resepsi tautan privat untuk mencari tamu dan mencatat kedatangan.
           </p>
         </div>
         <Badge variant={status?.active ? 'default' : 'secondary'}>
-          {status?.active ? 'Active' : 'Not set up'}
+          {status?.active ? 'Aktif' : 'Belum diatur'}
         </Badge>
       </section>
 
@@ -152,52 +152,52 @@ export default function GuestbookPage() {
             <div className="mb-2 flex size-11 items-center justify-center rounded-xl bg-secondary text-foreground">
               <BookOpen className="size-5" />
             </div>
-            <CardTitle className="font-serif text-2xl">Reception guestbook</CardTitle>
+            <CardTitle className="font-serif text-2xl">Buku tamu resepsi</CardTitle>
             <CardDescription>
-              The receptionist view is limited to guest lookup and check-in. It does not expose your wedding settings.
+              Tampilan petugas resepsi hanya untuk mencari tamu dan mencatat kehadiran. Pengaturan pernikahanmu tidak terlihat di sana.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
             {loading ? (
-              <p className="text-sm text-muted-foreground">Loading access status…</p>
+              <p className="text-sm text-muted-foreground">Memuat status akses…</p>
             ) : token ? (
               <div className="flex flex-col gap-3">
                 <label className="text-xs font-medium text-muted-foreground" htmlFor="guestbook-link">
-                  Guestbook link
+                  Tautan buku tamu
                 </label>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Input id="guestbook-link" readOnly value={guestbookUrl} className="min-w-0 flex-1" />
                   <Button variant="secondary" onClick={() => void copyLink()}>
                     <Copy data-icon="inline-start" />
-                    Copy link
+                    Salin tautan
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  This link is shown once when created. Store it somewhere safe before leaving this page.
+                  Tautan ini hanya tampil sekali saat dibuat. Simpan di tempat aman sebelum meninggalkan halaman ini.
                 </p>
               </div>
             ) : (
               <div className="rounded-xl border border-dashed bg-muted/30 p-5">
-                <p className="font-medium">No guestbook link yet</p>
+                <p className="font-medium">Belum ada tautan buku tamu</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Create a private link for the person checking guests in at the door.
+                  Buat tautan privat untuk orang yang memeriksa tamu di pintu masuk.
                 </p>
               </div>
             )}
 
             <div className="flex flex-wrap gap-3">
               <Button disabled={saving || loading} onClick={() => void createAccess()}>
-                {status?.active ? 'Regenerate link' : 'Create guestbook link'}
+                {status?.active ? 'Buat ulang tautan' : 'Buat tautan buku tamu'}
               </Button>
               {status?.active && (
                 <Button variant="outline" disabled={saving} onClick={() => void revokeAccess()}>
-                  Revoke access
+                  Cabut akses
                 </Button>
               )}
               {token && (
                 <Button variant="ghost" asChild>
                   <a href={guestbookUrl} target="_blank" rel="noreferrer">
-                    Open guestbook
+                    Buka buku tamu
                     <ExternalLink data-icon="inline-end" />
                   </a>
                 </Button>
@@ -209,15 +209,15 @@ export default function GuestbookPage() {
         <Card>
           <CardHeader>
             <ShieldCheck className="mb-2 size-5 text-muted-foreground" />
-            <CardTitle className="font-serif text-xl">Access notes</CardTitle>
-            <CardDescription>Keep the guestbook link with your reception team only.</CardDescription>
+            <CardTitle className="font-serif text-xl">Catatan akses</CardTitle>
+            <CardDescription>Bagikan tautan buku tamu hanya ke tim resepsimu.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
-            <p className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-foreground" />Guest lookup by name or QR code</p>
-            <p className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-foreground" />Check-in confirmation and duplicate warnings</p>
-            <p className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-foreground" />No access to owner settings</p>
+            <p className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-foreground" />Pencarian tamu lewat nama atau kode QR</p>
+            <p className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-foreground" />Konfirmasi kehadiran dan peringatan tamu ganda</p>
+            <p className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-foreground" />Tidak bisa mengakses pengaturan pemilik</p>
             {status?.last_used_at && (
-              <p className="border-t pt-3 text-xs">Last used {new Date(status.last_used_at).toLocaleString()}</p>
+              <p className="border-t pt-3 text-xs">Terakhir dipakai {new Date(status.last_used_at).toLocaleString()}</p>
             )}
           </CardContent>
         </Card>

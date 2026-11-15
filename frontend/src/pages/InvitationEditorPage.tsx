@@ -99,7 +99,7 @@ export default function InvitationEditorPage({
       setPreview(await api.get<InvitationPreview>('/invitation/preview'))
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : 'Unable to load invitation preview',
+        err instanceof ApiError ? err.message : 'Gagal memuat pratinjau undangan. Coba lagi.',
       )
     } finally {
       setPreviewLoading(false)
@@ -122,7 +122,7 @@ export default function InvitationEditorPage({
           setNeedsWedding(true)
         } else {
           setError(
-            err instanceof ApiError ? err.message : 'Unable to load invitation',
+            err instanceof ApiError ? err.message : 'Gagal memuat undangan. Coba lagi.',
           )
         }
       })
@@ -174,12 +174,12 @@ export default function InvitationEditorPage({
       const invitation = await saveDraft()
       setNotice(
         invitation.published_at
-          ? 'Draft saved. Publish again to update the public page.'
-          : 'Draft saved.',
+          ? 'Draf tersimpan. Terbitkan lagi untuk memperbarui halaman publik.'
+          : 'Draf tersimpan.',
       )
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : 'Unable to save invitation',
+        err instanceof ApiError ? err.message : 'Gagal menyimpan undangan. Coba lagi.',
       )
     } finally {
       setSaving(false)
@@ -189,7 +189,7 @@ export default function InvitationEditorPage({
   async function handlePublish() {
     if (
       !window.confirm(
-        'Publish this invitation? Your public page will go live with the saved draft.',
+        'Terbitkan undangan ini? Halaman publik akan tampil dengan draf yang tersimpan.',
       )
     ) {
       return
@@ -204,10 +204,10 @@ export default function InvitationEditorPage({
       const invitation = await api.post<Invitation>('/invitation/publish')
       setForm(toForm(invitation))
       setMeta(toMeta(invitation))
-      setNotice('Invitation published.')
+      setNotice('Undangan sudah terbit.')
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : 'Unable to publish invitation',
+        err instanceof ApiError ? err.message : 'Gagal menerbitkan undangan. Coba lagi.',
       )
     } finally {
       setSaving(false)
@@ -217,7 +217,7 @@ export default function InvitationEditorPage({
   async function handleUnpublish() {
     if (
       !window.confirm(
-        'Unpublish this invitation? The public page will stop working.',
+        'Tarik undangan ini? Halaman publik tidak akan bisa diakses lagi.',
       )
     ) {
       return
@@ -231,10 +231,10 @@ export default function InvitationEditorPage({
       const invitation = await api.post<Invitation>('/invitation/unpublish')
       setForm(toForm(invitation))
       setMeta(toMeta(invitation))
-      setNotice('Invitation unpublished.')
+      setNotice('Undangan sudah ditarik.')
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : 'Unable to unpublish invitation',
+        err instanceof ApiError ? err.message : 'Gagal menarik undangan. Coba lagi.',
       )
     } finally {
       setSaving(false)
@@ -247,13 +247,13 @@ export default function InvitationEditorPage({
 
       <section className="mb-8 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
         <div>
-          <p className="app-kicker mb-3">Invitation Studio</p>
-          <h1 className="font-serif text-4xl sm:text-5xl">Shape the invitation guests will remember.</h1>
+          <p className="app-kicker mb-3">Studio undangan</p>
+          <h1 className="font-serif text-4xl sm:text-5xl">Bentuk undangan yang akan diingat tamu.</h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-            Edit your story, check the details, and preview the finished invitation in one place.
+            Ubah ceritamu, periksa detailnya, dan lihat hasil undangan di satu tempat.
           </p>
         </div>
-        <div className="flex rounded-lg border bg-card p-1" role="tablist" aria-label="Invitation studio view">
+        <div className="flex rounded-lg border bg-card p-1" role="tablist" aria-label="Tampilan studio undangan">
           <Button
             type="button"
             size="sm"
@@ -263,7 +263,7 @@ export default function InvitationEditorPage({
             onClick={() => setView('edit')}
           >
             <PenLine data-icon="inline-start" />
-            Edit
+            Ubah
           </Button>
           <Button
             type="button"
@@ -274,7 +274,7 @@ export default function InvitationEditorPage({
             onClick={() => setView('preview')}
           >
             <Eye data-icon="inline-start" />
-            Preview
+            Pratinjau
           </Button>
         </div>
       </section>
@@ -285,21 +285,21 @@ export default function InvitationEditorPage({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle className="font-serif text-2xl">
-                Invitation draft
+                Draf undangan
               </CardTitle>
               <CardDescription>
-                Save your content, then publish when it is ready.
+                Simpan isinya, lalu terbitkan saat sudah siap.
               </CardDescription>
             </div>
             <Badge variant={meta.publishedAt ? 'default' : 'secondary'}>
               {meta.publishedAt
                 ? `Published (v${meta.version})`
-                : 'Draft'}
+                : 'Draf'}
             </Badge>
           </div>
           {meta.publishedAt && meta.slug && (
             <p className="text-sm text-muted-foreground">
-              Public link:{' '}
+              Tautan publik:{' '}
               <Link
                 to={`/i/${meta.slug}`}
                 target="_blank"
@@ -314,33 +314,33 @@ export default function InvitationEditorPage({
 
         <CardContent>
           {loading ? (
-            <p className="text-muted-foreground">Loading…</p>
+            <p className="text-muted-foreground">Memuat…</p>
           ) : needsWedding ? (
             <div className="flex flex-wrap items-center justify-between gap-4">
               <p className="text-sm">
-                Set up your wedding first.
+                Atur data pernikahanmu dulu.
               </p>
               <Button asChild size="sm">
-                <Link to="/">Go to dashboard</Link>
+                <Link to="/">Ke ringkasan</Link>
               </Button>
             </div>
           ) : (
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label htmlFor="template">Template</Label>
+                <Label htmlFor="template">Templat</Label>
                 <Select value="classic" disabled>
                   <SelectTrigger id="template" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="classic">Classic</SelectItem>
+                    <SelectItem value="classic">Klasik</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="headline">Headline</Label>
+                  <Label htmlFor="headline">Judul</Label>
                   <Input
                     id="headline"
                     maxLength={120}
@@ -353,7 +353,7 @@ export default function InvitationEditorPage({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="quote">Quote</Label>
+                  <Label htmlFor="quote">Kutipan</Label>
                   <Input
                     id="quote"
                     maxLength={500}
@@ -366,12 +366,12 @@ export default function InvitationEditorPage({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="message">Message</Label>
+                <Label htmlFor="message">Pesan</Label>
                 <Textarea
                   id="message"
                   rows={6}
                   maxLength={4000}
-                  placeholder="Share your story or a note for your guests."
+                  placeholder="Ceritakan kisahmu atau tulis pesan untuk tamu."
                   value={form.message}
                   onChange={(event) => updateField('message', event.target.value)}
                 />
@@ -379,7 +379,7 @@ export default function InvitationEditorPage({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="cover_image_url">Cover image URL</Label>
+                  <Label htmlFor="cover_image_url">URL gambar sampul</Label>
                   <Input
                     id="cover_image_url"
                     type="url"
@@ -393,11 +393,11 @@ export default function InvitationEditorPage({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="closing_message">Closing message</Label>
+                  <Label htmlFor="closing_message">Pesan penutup</Label>
                   <Input
                     id="closing_message"
                     maxLength={500}
-                    placeholder="With love, Ayu & Bima"
+                    placeholder="Dengan cinta, Ayu & Bima"
                     value={form.closing_message}
                     onChange={(event) =>
                       updateField('closing_message', event.target.value)
@@ -407,16 +407,16 @@ export default function InvitationEditorPage({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gallery">Gallery image URLs</Label>
+                <Label htmlFor="gallery">URL gambar galeri</Label>
                 <Textarea
                   id="gallery"
                   rows={4}
-                  placeholder={'One URL per line\nhttps://...'}
+                  placeholder={'Satu URL per baris\nhttps://...'}
                   value={form.gallery}
                   onChange={(event) => updateField('gallery', event.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  One image URL per line.
+                  Satu URL gambar per baris.
                 </p>
               </div>
 
@@ -439,7 +439,7 @@ export default function InvitationEditorPage({
 
               <div className="flex flex-wrap gap-3">
                 <Button type="submit" disabled={saving}>
-                  {saving ? 'Saving…' : 'Save draft'}
+                  {saving ? 'Menyimpan…' : 'Simpan draf'}
                 </Button>
                 {meta.publishedAt ? (
                   <Button
@@ -448,7 +448,7 @@ export default function InvitationEditorPage({
                     disabled={saving}
                     onClick={() => void handleUnpublish()}
                   >
-                    Unpublish
+                    Tarik undangan
                   </Button>
                 ) : (
                   <Button
@@ -457,7 +457,7 @@ export default function InvitationEditorPage({
                     disabled={saving}
                     onClick={() => void handlePublish()}
                   >
-                    Publish
+                    Terbitkan
                   </Button>
                 )}
               </div>
@@ -466,30 +466,30 @@ export default function InvitationEditorPage({
         </CardContent>
         </Card>
       ) : (
-        <section aria-label="Invitation preview">
+        <section aria-label="Pratinjau undangan">
           <Card className="mb-6">
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <CardTitle className="font-serif text-2xl">Guest preview</CardTitle>
-                  <CardDescription>The saved draft, exactly as guests will see it.</CardDescription>
+                  <CardTitle className="font-serif text-2xl">Pratinjau tamu</CardTitle>
+                  <CardDescription>Draf tersimpan, persis seperti yang dilihat tamu.</CardDescription>
                 </div>
                 <Badge variant={meta.publishedAt ? 'default' : 'secondary'}>
-                  {meta.publishedAt ? 'Published' : 'Draft'}
+                  {meta.publishedAt ? 'Terbit' : 'Draf'}
                 </Badge>
               </div>
             </CardHeader>
           </Card>
           {previewLoading ? (
-            <p className="text-muted-foreground">Loading preview…</p>
+            <p className="text-muted-foreground">Memuat pratinjau…</p>
           ) : preview ? (
             <InvitationTemplate wedding={preview.wedding} invitation={preview.invitation} />
           ) : (
             <Card>
               <CardContent className="flex flex-wrap items-center justify-between gap-4">
-                <p className="text-sm">Set up your wedding before previewing the invitation.</p>
+                <p className="text-sm">Atur data pernikahanmu sebelum melihat pratinjau undangan.</p>
                 <Button asChild size="sm">
-                  <Link to="/">Go to dashboard</Link>
+                  <Link to="/">Ke ringkasan</Link>
                 </Button>
               </CardContent>
             </Card>

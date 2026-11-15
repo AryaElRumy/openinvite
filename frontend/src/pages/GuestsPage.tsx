@@ -107,7 +107,7 @@ export default function GuestsPage() {
         if (err instanceof ApiError && err.status === 404) {
           setNeedsWedding(true)
         } else {
-          setError(err instanceof ApiError ? err.message : 'Unable to load guests')
+          setError(err instanceof ApiError ? err.message : 'Gagal memuat daftar tamu. Coba lagi.')
         }
       })
       .finally(() => {
@@ -146,7 +146,7 @@ export default function GuestsPage() {
     const maxAttendees = Number(guestMaxAttendees)
     if (name === '') return
     if (!Number.isInteger(maxAttendees) || maxAttendees < 1) {
-      setError('Max attendees must be at least 1.')
+      setError('Jumlah tamu minimal 1.')
       return
     }
 
@@ -163,33 +163,33 @@ export default function GuestsPage() {
     try {
       if (editingGuestId === null) {
         await api.post<Guest>('/guests', payload)
-        setNotice('Guest added.')
+        setNotice('Tamu ditambahkan.')
       } else {
         await api.put<Guest>(`/guests/${editingGuestId}`, payload)
-        setNotice('Guest updated.')
+        setNotice('Data tamu diperbarui.')
       }
       resetGuestForm()
       setGuestFormOpen(false)
       reload()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to save guest')
+      setError(err instanceof ApiError ? err.message : 'Gagal menyimpan data tamu. Coba lagi.')
     } finally {
       setSaving(false)
     }
   }
 
   async function handleDeleteGuest(guest: Guest) {
-    if (!window.confirm(`Delete ${guest.name}?`)) return
+    if (!window.confirm(`Hapus ${guest.name}?`)) return
 
     setError('')
     setNotice('')
     try {
       await api.delete(`/guests/${guest.id}`)
       if (editingGuestId === guest.id) resetGuestForm()
-      setNotice('Guest deleted.')
+      setNotice('Tamu dihapus.')
       reload()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to delete guest')
+      setError(err instanceof ApiError ? err.message : 'Gagal menghapus tamu. Coba lagi.')
     }
   }
 
@@ -205,10 +205,10 @@ export default function GuestsPage() {
     try {
       await api.post<GuestCategory>('/guest-categories', { name })
       setNewCategoryName('')
-      setNotice('Category added.')
+      setNotice('Kategori ditambahkan.')
       reload()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to add category')
+      setError(err instanceof ApiError ? err.message : 'Gagal menambah kategori. Coba lagi.')
     } finally {
       setSaving(false)
     }
@@ -240,10 +240,10 @@ export default function GuestsPage() {
         name,
       })
       resetCategoryForm()
-      setNotice('Category renamed.')
+      setNotice('Nama kategori diperbarui.')
       reload()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to rename category')
+      setError(err instanceof ApiError ? err.message : 'Gagal mengubah nama kategori. Coba lagi.')
     } finally {
       setSaving(false)
     }
@@ -252,7 +252,7 @@ export default function GuestsPage() {
   async function handleDeleteCategory(category: GuestCategory) {
     if (
       !window.confirm(
-        `Delete ${category.name}? Its guests will become uncategorized.`,
+        `Hapus ${category.name}? Tamu di kategori ini akan menjadi tanpa kategori.`,
       )
     ) {
       return
@@ -265,10 +265,10 @@ export default function GuestsPage() {
       if (categoryFilter === category.id) setCategoryFilter('')
       if (guestCategoryId === category.id) setGuestCategoryId('')
       if (editingCategoryId === category.id) resetCategoryForm()
-      setNotice('Category deleted.')
+      setNotice('Kategori dihapus.')
       reload()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to delete category')
+      setError(err instanceof ApiError ? err.message : 'Gagal menghapus kategori. Coba lagi.')
     }
   }
 
@@ -295,7 +295,7 @@ export default function GuestsPage() {
       setImportPreview(result)
       setImportCommitted(false)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to preview import')
+      setError(err instanceof ApiError ? err.message : 'Gagal memuat pratinjau impor. Coba lagi.')
     } finally {
       setSaving(false)
     }
@@ -303,7 +303,7 @@ export default function GuestsPage() {
 
   async function handleConfirmImport() {
     if (importFile === null || importPreview === null) return
-    if (!window.confirm(`Import ${importPreview.valid_count} guests?`)) return
+    if (!window.confirm(`Impor ${importPreview.valid_count} tamu?`)) return
 
     setError('')
     setNotice('')
@@ -317,11 +317,11 @@ export default function GuestsPage() {
       setImportPreview(result)
       setImportCommitted(true)
       setNotice(
-        `Imported ${result.imported} guests. ${result.invalid_count} rows skipped.`,
+        `Berhasil mengimpor ${result.imported} tamu. ${result.invalid_count} baris dilewati.`,
       )
       reload()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to import guests')
+      setError(err instanceof ApiError ? err.message : 'Gagal mengimpor tamu. Coba lagi.')
     } finally {
       setSaving(false)
     }
@@ -341,10 +341,10 @@ export default function GuestsPage() {
   function shareMessage(guest: Guest): string {
     if (wedding === null) return ''
     return (
-      `Hi ${guest.name}, you're invited to ` +
-      `${wedding.partner_one_name} & ${wedding.partner_two_name}'s wedding ` +
-      `on ${formatWeddingDate(wedding.wedding_date)} at ` +
-      `${wedding.venue_name}.\nOpen your invitation: ${guestUrl(guest)}`
+      `Halo ${guest.name}, kamu diundang ke pernikahan ` +
+      `${wedding.partner_one_name} & ${wedding.partner_two_name} ` +
+      `pada ${formatWeddingDate(wedding.wedding_date)} di ` +
+      `${wedding.venue_name}.\nBuka undanganmu: ${guestUrl(guest)}`
     )
   }
 
@@ -353,9 +353,9 @@ export default function GuestsPage() {
     setNotice('')
     try {
       await navigator.clipboard.writeText(guestUrl(guest))
-      setNotice('Guest link copied.')
+      setNotice('Tautan tamu disalin.')
     } catch {
-      setError('Unable to copy the guest link.')
+      setError('Gagal menyalin tautan tamu. Coba lagi.')
     }
   }
 
@@ -365,14 +365,14 @@ export default function GuestsPage() {
     try {
       await api.put<Guest>(`/guests/${guest.id}/share`, { shared: true })
       setNotice(
-        `${guest.name} marked shared. This does not confirm delivery or read.`,
+        `${guest.name} ditandai sudah dibagikan. Ini tidak memastikan pesan terkirim atau dibaca.`,
       )
       reload()
     } catch (err) {
       setError(
         err instanceof ApiError
           ? err.message
-          : 'Unable to mark the guest as shared.',
+          : 'Gagal menandai tamu sudah dibagikan. Coba lagi.',
       )
     }
   }
@@ -382,11 +382,11 @@ export default function GuestsPage() {
     setNotice('')
     try {
       await api.put<Guest>(`/guests/${guest.id}/share`, { shared: false })
-      setNotice('Share mark cleared.')
+      setNotice('Tanda berbagi dihapus.')
       reload()
     } catch (err) {
       setError(
-        err instanceof ApiError ? err.message : 'Unable to clear the share mark.',
+        err instanceof ApiError ? err.message : 'Gagal menghapus tanda berbagi. Coba lagi.',
       )
     }
   }
@@ -398,10 +398,10 @@ export default function GuestsPage() {
     setNotice('')
     try {
       await api.delete(`/guests/${guest.id}/rsvp`)
-      setNotice('RSVP cleared.')
+      setNotice('Jawaban RSVP dihapus.')
       reload()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to clear the RSVP.')
+      setError(err instanceof ApiError ? err.message : 'Gagal menghapus jawaban RSVP. Coba lagi.')
     }
   }
 
@@ -412,18 +412,18 @@ export default function GuestsPage() {
     setNotice('')
     try {
       await api.delete(`/guests/${guest.id}/check-in`)
-      setNotice('Check-in undone.')
+      setNotice('Kehadiran dibatalkan.')
       reload()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to undo the check-in.')
+      setError(err instanceof ApiError ? err.message : 'Gagal membatalkan kehadiran. Coba lagi.')
     }
   }
 
   function categoryName(categoryId: string | null): string {
-    if (categoryId === null) return 'Uncategorized'
+    if (categoryId === null) return 'Tanpa kategori'
     return (
       categories.find((category) => category.id === categoryId)?.name ??
-      'Uncategorized'
+      'Tanpa kategori'
     )
   }
 
@@ -461,19 +461,19 @@ export default function GuestsPage() {
         <CardHeader className="gap-4">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
             <div>
-              <CardTitle className="font-serif text-3xl">Guest list</CardTitle>
+              <CardTitle className="font-serif text-3xl">Daftar tamu</CardTitle>
               <CardDescription className="mt-2">
-                Find, filter, and keep track of everyone invited.
+                Cari, saring, dan pantau semua tamu yang diundang.
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={() => setCategoryModalOpen(true)}>
                 <Settings2 data-icon="inline-start" />
-                Categories
+                Kategori
               </Button>
               <Button variant="outline" size="sm" onClick={() => setImportModalOpen(true)}>
                 <Upload data-icon="inline-start" />
-                Import
+                Impor
               </Button>
               <Button
                 size="sm"
@@ -483,26 +483,26 @@ export default function GuestsPage() {
                 }}
               >
                 <Plus data-icon="inline-start" />
-                Add guest
+                Tambah tamu
               </Button>
             </div>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <span>{guests.length} invited</span>
-            <span>{totalCapacity} attendee capacity</span>
-            <span>{attendingCount} attending</span>
-            <span>{checkedInCount} checked in</span>
+            <span>{guests.length} diundang</span>
+            <span>kapasitas {totalCapacity} orang</span>
+            <span>{attendingCount} akan hadir</span>
+            <span>{checkedInCount} sudah hadir</span>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-6">
           {loading ? (
-            <p className="text-muted-foreground">Loading…</p>
+            <p className="text-muted-foreground">Memuat…</p>
           ) : needsWedding ? (
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <p className="text-sm">Set up your wedding first.</p>
+              <p className="text-sm">Atur data pernikahanmu dulu.</p>
               <Button asChild size="sm">
-                <Link to="/">Go to dashboard</Link>
+                <Link to="/">Ke ringkasan</Link>
               </Button>
             </div>
           ) : (
@@ -526,21 +526,21 @@ export default function GuestsPage() {
 
               {guests.length > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  “Marked shared” is a manual record. It does not confirm
-                  delivery or read.
+                  “Ditandai dibagikan” hanya catatan manual. Ini tidak memastikan
+                  pesan terkirim atau dibaca.
                 </p>
               )}
 
               <div className="flex flex-col gap-3 rounded-xl bg-muted/45 p-3 lg:flex-row lg:items-end">
                 <div className="min-w-0 flex-1 space-y-2">
-                  <Label htmlFor="guest-search">Search guests</Label>
+                  <Label htmlFor="guest-search">Cari tamu</Label>
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       id="guest-search"
                       type="search"
                       className="pl-9"
-                      placeholder="Search by name"
+                      placeholder="Cari berdasarkan nama"
                       value={search}
                       onChange={(event) => setSearch(event.target.value)}
                     />
@@ -548,7 +548,7 @@ export default function GuestsPage() {
                 </div>
 
                 <div className="space-y-2 lg:w-48">
-                  <Label htmlFor="guest-category-filter">Category</Label>
+                  <Label htmlFor="guest-category-filter">Kategori</Label>
                   <Select
                     value={categoryFilter || 'all'}
                     onValueChange={(value) =>
@@ -559,7 +559,7 @@ export default function GuestsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All categories</SelectItem>
+                      <SelectItem value="all">Semua kategori</SelectItem>
                       {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
@@ -570,7 +570,7 @@ export default function GuestsPage() {
                 </div>
 
                 <div className="space-y-2 lg:w-44">
-                  <Label htmlFor="guest-share-filter">Share status</Label>
+                  <Label htmlFor="guest-share-filter">Status berbagi</Label>
                   <Select
                     value={shareFilter || 'all'}
                     onValueChange={(value) =>
@@ -581,15 +581,15 @@ export default function GuestsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All guests</SelectItem>
-                      <SelectItem value="shared">Marked shared</SelectItem>
-                      <SelectItem value="unshared">Not shared</SelectItem>
+                      <SelectItem value="all">Semua tamu</SelectItem>
+                      <SelectItem value="shared">Ditandai dibagikan</SelectItem>
+                      <SelectItem value="unshared">Belum dibagikan</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2 lg:w-44">
-                  <Label htmlFor="guest-rsvp-filter">RSVP status</Label>
+                  <Label htmlFor="guest-rsvp-filter">Status RSVP</Label>
                   <Select
                     value={rsvpFilter || 'all'}
                     onValueChange={(value) =>
@@ -600,10 +600,10 @@ export default function GuestsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All RSVPs</SelectItem>
-                      <SelectItem value="attending">Attending</SelectItem>
-                      <SelectItem value="declined">Declined</SelectItem>
-                      <SelectItem value="none">Not responded</SelectItem>
+                      <SelectItem value="all">Semua RSVP</SelectItem>
+                      <SelectItem value="attending">Hadir</SelectItem>
+                      <SelectItem value="declined">Tidak hadir</SelectItem>
+                      <SelectItem value="none">Belum menjawab</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -612,8 +612,8 @@ export default function GuestsPage() {
               {visibleGuests.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   {guests.length === 0
-                    ? 'No guests yet.'
-                    : 'No guests match your search.'}
+                    ? 'Belum ada tamu.'
+                    : 'Tidak ada tamu yang cocok dengan pencarian.'}
                 </p>
               ) : (
                 <ul className="space-y-3">
@@ -626,14 +626,13 @@ export default function GuestsPage() {
                         <p className="font-semibold break-words">{guest.name}</p>
                         <p className="text-sm break-words text-muted-foreground">
                           {categoryName(guest.category_id)} ·{' '}
-                          {guest.max_attendees}{' '}
-                          {guest.max_attendees === 1 ? 'attendee' : 'attendees'}
+                          {guest.max_attendees} orang
                         </p>
                         <div className="flex flex-wrap items-center gap-1.5">
                           <Badge
                             variant={guest.shared_at ? 'secondary' : 'outline'}
                           >
-                            {guest.shared_at ? 'Marked shared' : 'Not shared'}
+                            {guest.shared_at ? 'Ditandai dibagikan' : 'Belum dibagikan'}
                           </Badge>
                           <Badge
                             variant={
@@ -643,15 +642,15 @@ export default function GuestsPage() {
                             }
                           >
                             {guest.rsvp === null
-                              ? 'Not responded'
+                              ? 'Belum menjawab'
                               : guest.rsvp.status === 'attending'
-                                ? `Attending (${guest.rsvp.attendee_count})`
-                                : 'Declined'}
+                                ? `Hadir (${guest.rsvp.attendee_count})`
+                                : 'Tidak hadir'}
                           </Badge>
                           <Badge
                             variant={guest.checked_in_at ? 'default' : 'outline'}
                           >
-                            {guest.checked_in_at ? 'Checked in' : 'Not checked in'}
+                            {guest.checked_in_at ? 'Sudah hadir' : 'Belum hadir'}
                           </Badge>
                         </div>
                       </div>
@@ -663,7 +662,7 @@ export default function GuestsPage() {
                           type="button"
                           onClick={() => void handleCopyLink(guest)}
                         >
-                          Copy link
+                          Salin tautan
                         </Button>
                         <Button size="sm" asChild>
                           <a
@@ -680,7 +679,7 @@ export default function GuestsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              aria-label={`More actions for ${guest.name}`}
+                              aria-label={`Tindakan lain untuk ${guest.name}`}
                             >
                               <MoreHorizontal className="size-4" />
                             </Button>
@@ -689,27 +688,27 @@ export default function GuestsPage() {
                             <DropdownMenuItem
                               onSelect={() => startEditGuest(guest)}
                             >
-                              Edit
+                              Ubah
                             </DropdownMenuItem>
                             {guest.shared_at !== null && (
                               <DropdownMenuItem
                                 onSelect={() => void handleUnshareGuest(guest)}
                               >
-                                Undo share
+                                Batalkan tanda berbagi
                               </DropdownMenuItem>
                             )}
                             {guest.rsvp !== null && (
                               <DropdownMenuItem
                                 onSelect={() => void handleClearRsvp(guest)}
                               >
-                                Clear RSVP
+                                Hapus RSVP
                               </DropdownMenuItem>
                             )}
                             {guest.checked_in_at !== null && (
                               <DropdownMenuItem
                                 onSelect={() => void handleUndoCheckIn(guest)}
                               >
-                                Undo check-in
+                                Batalkan kehadiran
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
@@ -717,7 +716,7 @@ export default function GuestsPage() {
                               className="text-destructive focus:text-destructive"
                               onSelect={() => void handleDeleteGuest(guest)}
                             >
-                              Delete
+                              Hapus
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -735,16 +734,16 @@ export default function GuestsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingGuestId === null ? 'Add a guest' : 'Edit guest'}
+              {editingGuestId === null ? 'Tambah tamu' : 'Ubah data tamu'}
             </DialogTitle>
             <DialogDescription>
-              Set the invitation identity and the number of guests this invitation covers.
+              Atur nama pada undangan dan jumlah orang yang ditanggung undangan ini.
             </DialogDescription>
           </DialogHeader>
 
           <form className="flex flex-col gap-4" onSubmit={handleGuestSubmit}>
             <div className="space-y-2">
-              <Label htmlFor="guest-name">Guest name</Label>
+              <Label htmlFor="guest-name">Nama tamu</Label>
               <Input
                 id="guest-name"
                 required
@@ -757,7 +756,7 @@ export default function GuestsPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="guest-category">Category</Label>
+                <Label htmlFor="guest-category">Kategori</Label>
                 <Select
                   value={guestCategoryId || 'none'}
                   onValueChange={(value) =>
@@ -768,7 +767,7 @@ export default function GuestsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Uncategorized</SelectItem>
+                    <SelectItem value="none">Tanpa kategori</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}
@@ -779,7 +778,7 @@ export default function GuestsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="guest-max">Max attendees</Label>
+                <Label htmlFor="guest-max">Maksimal tamu</Label>
                 <Input
                   id="guest-max"
                   type="number"
@@ -799,10 +798,10 @@ export default function GuestsPage() {
 
             <DialogFooter>
               <Button variant="ghost" type="button" onClick={() => setGuestFormOpen(false)}>
-                Cancel
+                Batal
               </Button>
               <Button type="submit" disabled={saving}>
-                {saving ? 'Saving…' : editingGuestId === null ? 'Add guest' : 'Save changes'}
+                {saving ? 'Menyimpan…' : editingGuestId === null ? 'Tambah tamu' : 'Simpan perubahan'}
               </Button>
             </DialogFooter>
           </form>
@@ -816,32 +815,32 @@ export default function GuestsPage() {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <Settings2 className="size-4 text-muted-foreground" />
-                  Manage categories
+                  Kelola kategori
                 </DialogTitle>
                 <DialogDescription>
-                  Organize guests into groups for easier filtering.
+                  Kelompokkan tamu supaya lebih mudah disaring.
                 </DialogDescription>
               </DialogHeader>
             <CardContent className="space-y-4">
               <form className="flex flex-wrap items-end gap-3" onSubmit={handleAddCategory}>
                 <div className="min-w-0 flex-1 space-y-2">
-                  <Label htmlFor="new-category">New category</Label>
+                  <Label htmlFor="new-category">Kategori baru</Label>
                   <Input
                     id="new-category"
                     maxLength={80}
-                    placeholder="Family"
+                    placeholder="Keluarga"
                     value={newCategoryName}
                     onChange={(event) => setNewCategoryName(event.target.value)}
                   />
                 </div>
                 <Button type="submit" disabled={saving}>
-                  Add category
+                  Tambah kategori
                 </Button>
               </form>
 
               {categories.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No categories yet.
+                  Belum ada kategori.
                 </p>
               ) : (
                 <ul className="space-y-1">
@@ -856,7 +855,7 @@ export default function GuestsPage() {
                           onSubmit={handleRenameCategory}
                         >
                           <Input
-                            aria-label="Category name"
+                            aria-label="Nama kategori"
                             maxLength={80}
                             value={editCategoryName}
                             onChange={(event) =>
@@ -864,7 +863,7 @@ export default function GuestsPage() {
                             }
                           />
                           <Button type="submit" size="sm" disabled={saving}>
-                            Save
+                            Simpan
                           </Button>
                           <Button
                             variant="outline"
@@ -872,7 +871,7 @@ export default function GuestsPage() {
                             type="button"
                             onClick={resetCategoryForm}
                           >
-                            Cancel
+                            Batal
                           </Button>
                         </form>
                       ) : (
@@ -885,7 +884,7 @@ export default function GuestsPage() {
                               type="button"
                               onClick={() => startEditCategory(category)}
                             >
-                              Rename
+                              Ubah nama
                             </Button>
                             <Button
                               variant="ghost"
@@ -893,7 +892,7 @@ export default function GuestsPage() {
                               type="button"
                               onClick={() => void handleDeleteCategory(category)}
                             >
-                              Delete
+                              Hapus
                             </Button>
                           </div>
                         </>
@@ -909,15 +908,15 @@ export default function GuestsPage() {
           <Dialog open={importModalOpen} onOpenChange={setImportModalOpen}>
             <DialogContent className="max-w-4xl">
               <DialogHeader>
-                <DialogTitle>Import guests</DialogTitle>
+                <DialogTitle>Impor tamu</DialogTitle>
                 <DialogDescription>
-                  Upload a CSV or XLSX file with columns: name, category,
-                  max_attendees. Preview first; only valid rows are imported.
+                  Unggah file CSV atau XLSX dengan kolom: name, category,
+                  max_attendees. Lihat pratinjau dulu; hanya baris valid yang diimpor.
                 </DialogDescription>
               </DialogHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="guest-import-file">Guest list file</Label>
+                <Label htmlFor="guest-import-file">File daftar tamu</Label>
                 <Input
                   id="guest-import-file"
                   type="file"
@@ -934,7 +933,7 @@ export default function GuestsPage() {
                   onClick={() => void handlePreviewImport()}
                 >
                   <Upload data-icon="inline-start" />
-                  Preview import
+                  Pratinjau impor
                 </Button>
                 {importPreview !== null && !importCommitted && (
                   <Button
@@ -943,7 +942,7 @@ export default function GuestsPage() {
                     disabled={saving || importPreview.valid_count === 0}
                     onClick={() => void handleConfirmImport()}
                   >
-                    Import {importPreview.valid_count} guests
+                    Impor {importPreview.valid_count} tamu
                   </Button>
                 )}
               </div>
@@ -952,25 +951,25 @@ export default function GuestsPage() {
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
                     {importPreview.valid_count} valid ·{' '}
-                    {importPreview.invalid_count} invalid
+                    {importPreview.invalid_count} tidak valid
                     {importPreview.imported > 0
-                      ? ` · ${importPreview.imported} imported`
+                      ? ` · ${importPreview.imported} diimpor`
                       : ''}
                   </p>
 
                   {importPreview.rows.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      The file has no guest rows.
+                      File ini tidak berisi baris tamu.
                     </p>
                   ) : (
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Row</TableHead>
-                            <TableHead>Name</TableHead>
+                            <TableHead>Baris</TableHead>
+                            <TableHead>Nama</TableHead>
                             <TableHead>Category</TableHead>
-                            <TableHead>Max</TableHead>
+                            <TableHead>Maks</TableHead>
                             <TableHead>Status</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -987,7 +986,7 @@ export default function GuestsPage() {
                               <TableCell>{row.category || '—'}</TableCell>
                               <TableCell>{row.max_attendees ?? '—'}</TableCell>
                               <TableCell>
-                                {row.valid ? 'Ready' : row.errors.join('; ')}
+                                {row.valid ? 'Siap' : row.errors.join('; ')}
                               </TableCell>
                             </TableRow>
                           ))}

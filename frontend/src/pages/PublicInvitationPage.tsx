@@ -72,7 +72,7 @@ export default function PublicInvitationPage() {
         if (err instanceof ApiError && err.status === 404) {
           setNotFound(true)
         } else {
-          setError(err instanceof ApiError ? err.message : 'Unable to load invitation')
+          setError(err instanceof ApiError ? err.message : 'Gagal memuat undangan. Coba lagi.')
         }
       })
       .finally(() => {
@@ -94,7 +94,7 @@ export default function PublicInvitationPage() {
       (!Number.isInteger(count) || count < 1 || count > guest.max_attendees)
     ) {
       setRsvpError(
-        `Attendee count must be between 1 and ${guest.max_attendees}.`,
+        `Jumlah tamu harus antara 1 sampai ${guest.max_attendees}.`,
       )
       return
     }
@@ -111,12 +111,12 @@ export default function PublicInvitationPage() {
       setGuest({ ...guest, rsvp })
       setRsvpNotice(
         rsvp.status === 'declined'
-          ? 'Response saved. You declined.'
-          : `Response saved. ${rsvp.attendee_count} attending.`,
+          ? 'Jawaban tersimpan. Kamu tidak bisa hadir.'
+          : `Jawaban tersimpan. ${rsvp.attendee_count} orang akan hadir.`,
       )
     } catch (err) {
       setRsvpError(
-        err instanceof ApiError ? err.message : 'Unable to save RSVP.',
+        err instanceof ApiError ? err.message : 'Gagal menyimpan jawaban. Coba lagi.',
       )
     } finally {
       setRsvpSaving(false)
@@ -128,9 +128,9 @@ export default function PublicInvitationPage() {
       <main className="mx-auto flex min-h-dvh w-full max-w-2xl items-center justify-center px-4">
         <Card className="w-full">
           <CardHeader>
-            <CardTitle>Invitation not found</CardTitle>
+            <CardTitle>Undangan tidak ditemukan</CardTitle>
             <CardDescription>
-              The link is missing an invitation slug.
+              Tautan ini tidak memuat kode undangan.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -141,20 +141,20 @@ export default function PublicInvitationPage() {
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-6">
       {loading ? (
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-muted-foreground">Memuat…</p>
       ) : notFound ? (
         <Card>
           <CardHeader>
-            <CardTitle>Invitation not found</CardTitle>
+            <CardTitle>Undangan tidak ditemukan</CardTitle>
             <CardDescription>
-              This invitation may be unpublished, or the link is wrong.
+              Undangan ini mungkin belum terbit atau tautannya salah.
             </CardDescription>
           </CardHeader>
         </Card>
       ) : error !== '' ? (
         <Card>
           <CardHeader>
-            <CardTitle>Unable to load invitation</CardTitle>
+            <CardTitle>Undangan gagal dimuat</CardTitle>
             <CardDescription>{error}</CardDescription>
           </CardHeader>
         </Card>
@@ -171,15 +171,15 @@ export default function PublicInvitationPage() {
               <Card className="mt-6">
                 <CardHeader>
                   <CardTitle className="font-serif text-xl">
-                    Your check-in QR
+                    Kode QR kehadiranmu
                   </CardTitle>
-                  <CardDescription>Show this at reception.</CardDescription>
+                  <CardDescription>Tunjukkan kode ini di resepsi.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center">
                   <div
                     className="rounded-2xl bg-white p-4 shadow-sm"
                     role="img"
-                    aria-label="Invitation check-in QR code"
+                    aria-label="Kode QR kehadiran undangan"
                   >
                     <QRCodeSVG value={window.location.href} size={180} />
                   </div>
@@ -201,22 +201,22 @@ export default function PublicInvitationPage() {
                         }
                       >
                         {guest.rsvp.status === 'attending'
-                          ? `Attending (${guest.rsvp.attendee_count})`
-                          : 'Declined'}
+                          ? `Hadir (${guest.rsvp.attendee_count})`
+                          : 'Tidak hadir'}
                       </Badge>
                     )}
                   </div>
                   <CardDescription>
                     {guest.rsvp
-                      ? `Last response ${new Date(guest.rsvp.responded_at).toLocaleString()}.`
-                      : 'Let the couple know if you can make it.'}
+                      ? `Jawaban terakhir ${new Date(guest.rsvp.responded_at).toLocaleString()}.`
+                      : 'Beri tahu kedua mempelai apakah kamu bisa datang.'}
                   </CardDescription>
                 </CardHeader>
 
                 <CardContent>
                   <form className="space-y-4" onSubmit={handleRsvpSubmit}>
                     <div className="space-y-2">
-                      <Label htmlFor="rsvp-status">Will you attend?</Label>
+                      <Label htmlFor="rsvp-status">Apakah kamu bisa hadir?</Label>
                       <Select
                         value={rsvpStatus}
                         onValueChange={(value) =>
@@ -227,15 +227,15 @@ export default function PublicInvitationPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="attending">Attending</SelectItem>
-                          <SelectItem value="declined">Declined</SelectItem>
+                          <SelectItem value="attending">Hadir</SelectItem>
+                          <SelectItem value="declined">Tidak hadir</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     {rsvpStatus === 'attending' && (
                       <div className="space-y-2">
-                        <Label htmlFor="rsvp-count">Number of attendees</Label>
+                        <Label htmlFor="rsvp-count">Jumlah orang yang hadir</Label>
                         <Input
                           id="rsvp-count"
                           type="number"
@@ -248,8 +248,7 @@ export default function PublicInvitationPage() {
                           }
                         />
                         <p className="text-xs text-muted-foreground">
-                          Up to {guest.max_attendees}{' '}
-                          {guest.max_attendees === 1 ? 'guest' : 'guests'}.
+                          Maksimal {guest.max_attendees} tamu.
                         </p>
                       </div>
                     )}
@@ -273,10 +272,10 @@ export default function PublicInvitationPage() {
 
                     <Button type="submit" disabled={rsvpSaving}>
                       {rsvpSaving
-                        ? 'Saving…'
+                        ? 'Menyimpan…'
                         : guest.rsvp
-                          ? 'Update response'
-                          : 'Send RSVP'}
+                          ? 'Perbarui jawaban'
+                          : 'Kirim jawaban'}
                     </Button>
                   </form>
                 </CardContent>

@@ -19,7 +19,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   })
 
   if (!response.ok) {
-    let message = 'Request failed'
+    let message = 'Permintaan gagal. Coba lagi.'
     try {
       const data = await response.json()
       if (typeof data?.detail === 'string') {

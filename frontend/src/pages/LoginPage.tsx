@@ -36,7 +36,7 @@ export default function LoginPage() {
       await login(email, password)
       navigate('/', { replace: true })
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to sign in')
+      setError(err instanceof ApiError ? err.message : 'Gagal masuk. Coba lagi.')
     } finally {
       setSaving(false)
     }
@@ -46,15 +46,15 @@ export default function LoginPage() {
     <main className="grid min-h-dvh lg:grid-cols-[minmax(18rem,0.8fr)_minmax(24rem,1fr)]">
       <aside className="hidden bg-foreground p-10 text-background lg:flex lg:flex-col lg:justify-between">
         <div className="flex items-center gap-2 font-semibold"><Heart className="size-4 fill-primary text-primary" /> openinvite.</div>
-        <div><p className="app-kicker mb-4 text-primary">A little less to carry</p><p className="max-w-sm font-serif text-4xl leading-tight">The beautiful part is already on its way.</p></div>
-        <p className="text-sm text-background/60">Invitation planning, made personal.</p>
+        <div><p className="app-kicker mb-4 text-primary">Sedikit lebih ringan</p><p className="max-w-sm font-serif text-4xl leading-tight">Bagian indahnya sudah dalam perjalanan.</p></div>
+        <p className="text-sm text-background/60">Rencana undangan, dibuat lebih personal.</p>
       </aside>
       <div className="flex items-center justify-center px-4 py-12">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <p className="app-kicker">Welcome back</p>
-          <CardTitle className="font-serif text-3xl">Sign in</CardTitle>
-          <CardDescription>Manage your wedding invitation.</CardDescription>
+          <p className="app-kicker">Selamat datang kembali</p>
+          <CardTitle className="font-serif text-3xl">Masuk</CardTitle>
+          <CardDescription>Kelola undangan pernikahanmu.</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
@@ -71,7 +71,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Kata sandi</Label>
               <Input
                 id="password"
                 type="password"
@@ -92,17 +92,17 @@ export default function LoginPage() {
             )}
 
             <Button type="submit" className="w-full" disabled={saving}>
-              {saving ? 'Signing in…' : 'Sign in'}
+              {saving ? 'Sedang masuk…' : 'Masuk'}
             </Button>
           </form>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            New here?{' '}
+            Baru di sini?{' '}
             <Link
               to="/register"
               className="font-medium text-foreground underline-offset-4 hover:underline"
             >
-              Create an account
+              Buat akun
             </Link>
           </p>
         </CardContent>

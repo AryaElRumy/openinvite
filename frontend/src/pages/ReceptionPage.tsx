@@ -101,7 +101,7 @@ export default function ReceptionPage() {
         setScanError(
           err instanceof ApiError
             ? err.message
-            : 'Unable to validate the QR code.',
+            : 'Gagal memeriksa kode QR. Coba lagi.',
         )
       }
     },
@@ -124,7 +124,7 @@ export default function ReceptionPage() {
       setScanResult(result.guest)
     } catch (err) {
       setCheckInError(
-        err instanceof ApiError ? err.message : 'Unable to check in the guest.',
+        err instanceof ApiError ? err.message : 'Gagal mencatat kehadiran tamu. Coba lagi.',
       )
     } finally {
       setCheckingIn(false)
@@ -136,8 +136,8 @@ export default function ReceptionPage() {
       <Page>
         <Card>
           <CardHeader>
-            <CardTitle>Guest Reception</CardTitle>
-            <CardDescription>This reception link is invalid.</CardDescription>
+            <CardTitle>Resepsi tamu</CardTitle>
+            <CardDescription>Tautan resepsi ini tidak valid.</CardDescription>
           </CardHeader>
         </Card>
       </Page>
@@ -155,23 +155,22 @@ export default function ReceptionPage() {
   return (
     <Page>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <span className="font-semibold tracking-tight">Guest Reception</span>
+        <span className="font-semibold tracking-tight">Resepsi tamu</span>
         <span className="text-sm text-muted-foreground">
-          Restricted event-day access
+          Akses terbatas untuk hari acara
         </span>
       </header>
 
       <Card>
         {loading ? (
           <CardContent>
-            <p className="text-muted-foreground">Loading…</p>
+            <p className="text-muted-foreground">Memuat…</p>
           </CardContent>
         ) : invalid || wedding === null ? (
           <CardHeader>
-            <CardTitle>Access unavailable</CardTitle>
+            <CardTitle>Akses tidak tersedia</CardTitle>
             <CardDescription>
-              This reception link is invalid or has been revoked. Ask the couple
-              for a new link.
+              Tautan resepsi ini tidak valid atau sudah dicabut. Minta tautan baru ke kedua mempelai.
             </CardDescription>
           </CardHeader>
         ) : (
@@ -196,7 +195,7 @@ export default function ReceptionPage() {
                     setScanResult(null)
                   }}
                 >
-                  Scan QR
+                  Pindai QR
                 </Button>
               </div>
 
@@ -205,7 +204,7 @@ export default function ReceptionPage() {
                   <Suspense
                     fallback={
                       <p className="text-sm text-muted-foreground">
-                        Starting camera…
+                        Membuka kamera…
                       </p>
                     }
                   >
@@ -216,7 +215,7 @@ export default function ReceptionPage() {
                     type="button"
                     onClick={() => setScanning(false)}
                   >
-                    Close scanner
+                    Tutup pemindai
                   </Button>
                 </div>
               )}
@@ -225,10 +224,9 @@ export default function ReceptionPage() {
                 <div className="rounded-xl border bg-muted/30 p-4">
                   <p className="text-sm font-medium">{scanResult.name}</p>
                   <p className="text-sm text-muted-foreground">
-                    Up to {scanResult.max_attendees}{' '}
-                    {scanResult.max_attendees === 1 ? 'guest' : 'guests'}
+                    Maksimal {scanResult.max_attendees} tamu
                     {scanResult.checked_in_at
-                      ? ` · checked in ${new Date(scanResult.checked_in_at).toLocaleString()}`
+                      ? ` · tercatat hadir ${new Date(scanResult.checked_in_at).toLocaleString()}`
                       : ''}
                   </p>
 
@@ -239,16 +237,16 @@ export default function ReceptionPage() {
                       disabled={checkingIn}
                       onClick={() => void handleCheckIn()}
                     >
-                      {checkingIn ? 'Checking in…' : 'Check in'}
+                      {checkingIn ? 'Mencatat…' : 'Catat kehadiran'}
                     </Button>
                   )}
 
                   {checkInResult !== null && (
                     <p className="mt-3 text-sm text-foreground">
                       {checkInResult.already_checked_in
-                        ? 'Already checked in'
-                        : 'Checked in'}{' '}
-                      at {new Date(checkInResult.checked_in_at).toLocaleString()}.
+                        ? 'Sudah tercatat hadir'
+                        : 'Tercatat hadir'}{' '}
+                      pada {new Date(checkInResult.checked_in_at).toLocaleString()}.
                     </p>
                   )}
                 </div>
@@ -272,11 +270,11 @@ export default function ReceptionPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="reception-search">Find a guest</Label>
+                <Label htmlFor="reception-search">Cari tamu</Label>
                 <Input
                   id="reception-search"
                   type="search"
-                  placeholder="Name or invitation code"
+                  placeholder="Nama atau kode undangan"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
                 />
@@ -284,7 +282,7 @@ export default function ReceptionPage() {
 
               {visibleGuests.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No guests match.
+                  Tidak ada tamu yang cocok.
                 </p>
               ) : (
                 <ul className="space-y-3">
@@ -296,15 +294,14 @@ export default function ReceptionPage() {
                       <div className="min-w-0 space-y-1">
                         <p className="font-semibold break-words">{guest.name}</p>
                         <p className="text-sm break-words text-muted-foreground">
-                          Up to {guest.max_attendees}{' '}
-                          {guest.max_attendees === 1 ? 'guest' : 'guests'} ·
-                          Code {guest.invitation_code}
+                          Maksimal {guest.max_attendees} tamu ·
+                          Kode {guest.invitation_code}
                         </p>
                       </div>
                       <Badge
                         variant={guest.checked_in_at ? 'default' : 'outline'}
                       >
-                        {guest.checked_in_at ? 'Checked in' : 'Not checked in'}
+                        {guest.checked_in_at ? 'Sudah hadir' : 'Belum hadir'}
                       </Badge>
                     </li>
                   ))}

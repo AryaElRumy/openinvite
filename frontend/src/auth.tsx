@@ -69,7 +69,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   if (loading) {
     return (
       <main className="flex min-h-dvh items-center justify-center text-muted-foreground">
-        Loading…
+        Memuat…
       </main>
     )
   }

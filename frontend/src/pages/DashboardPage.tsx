@@ -89,8 +89,8 @@ function nullIfEmpty(value: string): string | null {
 }
 
 function formatDate(value: string) {
-  if (!value) return 'Not set yet'
-  return new Intl.DateTimeFormat('en', {
+  if (!value) return 'Belum diisi'
+  return new Intl.DateTimeFormat('id-ID', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -128,7 +128,7 @@ export default function DashboardPage() {
       .catch((err) => {
         if (cancelled) return
         if (!(err instanceof ApiError && err.status === 404)) {
-          setError(err instanceof ApiError ? err.message : 'Unable to load wedding')
+          setError(err instanceof ApiError ? err.message : 'Gagal memuat data pernikahan. Coba lagi.')
         }
       })
       .finally(() => {
@@ -202,7 +202,7 @@ export default function DashboardPage() {
       setSaved(true)
       setEditOpen(false)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to save wedding')
+      setError(err instanceof ApiError ? err.message : 'Gagal menyimpan data. Coba lagi.')
     } finally {
       setSaving(false)
     }
@@ -214,77 +214,77 @@ export default function DashboardPage() {
 
       <section className="mb-8 flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
         <div>
-          <p className="app-kicker mb-3">Overview</p>
+          <p className="app-kicker mb-3">Ringkasan</p>
           <h1 className="max-w-xl text-4xl sm:text-5xl">
-            A clear view of your day.
+            Gambaran jelas untuk hari besarmu.
           </h1>
           <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">
-            Keep the important details close, and share the rest beautifully.
+            Simpan detail penting di dekatmu, bagikan sisanya dengan indah.
           </p>
         </div>
         {exists && (
           <Button variant="outline" asChild>
             <Link to="/preview">
-              View invitation
+              Lihat undangan
               <ArrowUpRight data-icon="inline-end" />
             </Link>
           </Button>
         )}
       </section>
 
-      <Card className="mb-8" aria-label="Wedding overview">
+      <Card className="mb-8" aria-label="Ringkasan pernikahan">
         <CardHeader className="gap-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <CardTitle className="font-serif text-2xl">Wedding overview</CardTitle>
+              <CardTitle className="font-serif text-2xl">Ringkasan pernikahan</CardTitle>
               <CardDescription className="mt-2">
-                {exists ? 'The details guests will see first.' : 'Add the details guests need most.'}
+                {exists ? 'Detail yang pertama dilihat tamu.' : 'Tambahkan detail yang paling dibutuhkan tamu.'}
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)} disabled={loading}>
               <Pencil data-icon="inline-start" />
-              {exists ? 'Edit details' : 'Add details'}
+              {exists ? 'Ubah detail' : 'Isi detail'}
             </Button>
           </div>
         </CardHeader>
 
         <CardContent>
           {loading ? (
-            <p className="text-muted-foreground">Loading…</p>
+            <p className="text-muted-foreground">Memuat…</p>
           ) : exists ? (
             <div className="grid gap-6 border-t pt-6 sm:grid-cols-2 lg:grid-cols-4">
               <div className="flex items-start gap-3">
                 <CalendarDays className="mt-0.5 size-4 text-muted-foreground" />
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">Date</p>
+                  <p className="text-xs text-muted-foreground">Tanggal</p>
                   <p className="mt-1 font-medium">{formatDate(form.wedding_date)}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <MapPin className="mt-0.5 size-4 text-muted-foreground" />
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">Venue</p>
-                  <p className="mt-1 truncate font-medium">{form.venue_name || 'Not set yet'}</p>
-                  <p className="truncate text-xs text-muted-foreground">{form.venue_address || 'Add an address'}</p>
+                  <p className="text-xs text-muted-foreground">Lokasi</p>
+                  <p className="mt-1 truncate font-medium">{form.venue_name || 'Belum diisi'}</p>
+                  <p className="truncate text-xs text-muted-foreground">{form.venue_address || 'Tambahkan alamat'}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Sparkles className="mt-0.5 size-4 text-muted-foreground" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Readiness</p>
-                  <p className="mt-1 font-medium">{completedSteps}/4 ready</p>
+                  <p className="text-xs text-muted-foreground">Kesiapan</p>
+                  <p className="mt-1 font-medium">{completedSteps}/4 siap</p>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Invitation</p>
+                <p className="text-xs text-muted-foreground">Undangan</p>
                 <Badge className="mt-2" variant={slugLocked ? 'default' : 'secondary'}>
-                  {slugLocked ? 'Published' : 'Draft'}
+                  {slugLocked ? 'Terbit' : 'Draf'}
                 </Badge>
               </div>
             </div>
           ) : (
             <div className="border-t pt-6 text-sm text-muted-foreground">
-              Your wedding details will appear here once you add them.
+              Detail pernikahanmu akan muncul di sini setelah kamu menambahkannya.
             </div>
           )}
         </CardContent>
@@ -293,16 +293,16 @@ export default function DashboardPage() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-3xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{exists ? 'Edit wedding details' : 'Set up your wedding'}</DialogTitle>
+            <DialogTitle>{exists ? 'Ubah detail pernikahan' : 'Atur pernikahanmu'}</DialogTitle>
             <DialogDescription>
-              Add the details that shape your invitation and help guests arrive prepared.
+              Lengkapi detail yang membentuk undanganmu dan membantu tamu datang lebih siap.
             </DialogDescription>
           </DialogHeader>
 
           <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="partner_one_name">Partner one</Label>
+                  <Label htmlFor="partner_one_name">Mempelai pertama</Label>
                   <Input
                     id="partner_one_name"
                     required
@@ -315,7 +315,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="partner_two_name">Partner two</Label>
+                  <Label htmlFor="partner_two_name">Mempelai kedua</Label>
                   <Input
                     id="partner_two_name"
                     required
@@ -328,7 +328,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="wedding_date">Wedding date</Label>
+                  <Label htmlFor="wedding_date">Tanggal pernikahan</Label>
                   <Input
                     id="wedding_date"
                     type="date"
@@ -341,7 +341,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="venue_name">Venue</Label>
+                  <Label htmlFor="venue_name">Lokasi</Label>
                   <Input
                     id="venue_name"
                     required
@@ -354,7 +354,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="venue_address">Venue address</Label>
+                  <Label htmlFor="venue_address">Alamat lokasi</Label>
                   <Input
                     id="venue_address"
                     maxLength={300}
@@ -366,7 +366,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="maps_url">Maps link</Label>
+                  <Label htmlFor="maps_url">Tautan peta</Label>
                   <Input
                     id="maps_url"
                     type="url"
@@ -379,11 +379,11 @@ export default function DashboardPage() {
               </div>
 
               <fieldset className="space-y-3">
-                <legend className="mb-2 font-semibold">Events</legend>
+                <legend className="mb-2 font-semibold">Rangkaian acara</legend>
                 {form.events.map((item, index) => (
                   <div key={index} className="space-y-3 rounded-xl border border-dashed p-4">
                     <div className="space-y-2">
-                      <Label htmlFor={`event-name-${index}`}>Event name</Label>
+                      <Label htmlFor={`event-name-${index}`}>Nama acara</Label>
                       <Input
                         id={`event-name-${index}`}
                         maxLength={120}
@@ -397,7 +397,7 @@ export default function DashboardPage() {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor={`event-start-${index}`}>Starts</Label>
+                        <Label htmlFor={`event-start-${index}`}>Mulai</Label>
                         <Input
                           id={`event-start-${index}`}
                           maxLength={40}
@@ -410,7 +410,7 @@ export default function DashboardPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor={`event-end-${index}`}>Ends</Label>
+                        <Label htmlFor={`event-end-${index}`}>Selesai</Label>
                         <Input
                           id={`event-end-${index}`}
                           maxLength={40}
@@ -423,7 +423,7 @@ export default function DashboardPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor={`event-venue-${index}`}>Event venue</Label>
+                        <Label htmlFor={`event-venue-${index}`}>Tempat acara</Label>
                         <Input
                           id={`event-venue-${index}`}
                           maxLength={200}
@@ -436,7 +436,7 @@ export default function DashboardPage() {
 
                       <div className="space-y-2">
                         <Label htmlFor={`event-address-${index}`}>
-                          Event address
+                          Alamat acara
                         </Label>
                         <Input
                           id={`event-address-${index}`}
@@ -455,18 +455,18 @@ export default function DashboardPage() {
                       type="button"
                       onClick={() => removeEvent(index)}
                     >
-                      Remove event
+                      Hapus acara
                     </Button>
                   </div>
                 ))}
 
                 <Button variant="secondary" type="button" onClick={addEvent}>
-                  Add event
+                  Tambah acara
                 </Button>
               </fieldset>
 
               <div className="space-y-2">
-                <Label htmlFor="slug">Invitation link</Label>
+                <Label htmlFor="slug">Tautan undangan</Label>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">/i/</span>
                   <Input
@@ -480,8 +480,8 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {slugLocked
-                    ? 'The link is locked after publishing.'
-                    : 'Lowercase letters, numbers, and hyphens.'}
+                    ? 'Tautan tidak bisa diubah setelah undangan terbit.'
+                    : 'Huruf kecil, angka, dan tanda hubung.'}
                 </p>
               </div>
 
@@ -498,16 +498,16 @@ export default function DashboardPage() {
                   role="status"
                   className="rounded-md bg-accent/15 px-3 py-2 text-sm text-foreground"
                 >
-                  Saved.
+                  Tersimpan.
                 </p>
               )}
 
               <DialogFooter>
                 <Button variant="ghost" type="button" onClick={() => setEditOpen(false)}>
-                  Cancel
+                  Batal
                 </Button>
                 <Button type="submit" disabled={saving}>
-                  {saving ? 'Saving…' : 'Save wedding'}
+                  {saving ? 'Menyimpan…' : 'Simpan data'}
                 </Button>
               </DialogFooter>
             </form>
@@ -516,12 +516,12 @@ export default function DashboardPage() {
 
       {exists && (
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          Ready to edit your invitation?{' '}
+          Siap mengubah undanganmu?{' '}
           <Link
             to="/editor"
             className="font-medium text-foreground underline-offset-4 hover:underline"
           >
-            Open editor
+            Buka editor
           </Link>
         </p>
       )}

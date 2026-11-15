@@ -12,7 +12,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       variant="ghost"
       size="icon"
       className={className}
-      aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+      aria-label={dark ? 'Ganti ke tema terang' : 'Ganti ke tema gelap'}
       onClick={() => theme.toggle()}
     >
       {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}

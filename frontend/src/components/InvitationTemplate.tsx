@@ -33,15 +33,14 @@ export default function InvitationTemplate({
       <header className="px-6 py-10 text-center">
         {guest && (
           <>
-            <p className="text-sm font-semibold break-words">Dear {guest.name}</p>
+            <p className="text-sm font-semibold break-words">Kepada {guest.name}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Admits up to {guest.max_attendees}{' '}
-              {guest.max_attendees === 1 ? 'guest' : 'guests'}.
+              Berlaku untuk maksimal {guest.max_attendees} tamu.
             </p>
           </>
         )}
         <p className="mt-4 text-xs font-medium tracking-[0.22em] text-muted-foreground uppercase">
-          The Wedding Of
+          Pernikahan
         </p>
         <h1 className="mt-2 font-serif text-4xl leading-[1.02] tracking-[-0.025em] sm:text-5xl">
           {headline}
@@ -66,7 +65,7 @@ export default function InvitationTemplate({
       {wedding.events.length > 0 && (
         <section className="border-t px-6 py-5">
           <h2 className="text-sm font-semibold tracking-[0.12em] uppercase">
-            Events
+            Rangkaian acara
           </h2>
           <ul className="mt-3 space-y-3">
             {wedding.events.map((event, index) => (
@@ -95,7 +94,7 @@ export default function InvitationTemplate({
 
       <section className="border-t px-6 py-5">
         <h2 className="text-sm font-semibold tracking-[0.12em] uppercase">
-          Venue
+          Lokasi
         </h2>
         <p className="mt-2 text-sm font-medium">{wedding.venue_name}</p>
         {wedding.venue_address && (
@@ -110,7 +109,7 @@ export default function InvitationTemplate({
             rel="noreferrer"
             className="mt-2 inline-block text-sm font-medium text-foreground underline-offset-4 hover:underline"
           >
-            Open map
+            Buka peta
           </a>
         )}
       </section>
@@ -118,7 +117,7 @@ export default function InvitationTemplate({
       {invitation.gallery_image_urls.length > 0 && (
         <section className="border-t px-6 py-5">
           <h2 className="text-sm font-semibold tracking-[0.12em] uppercase">
-            Gallery
+            Galeri
           </h2>
           <div className="mt-3 grid grid-cols-2 gap-2">
             {invitation.gallery_image_urls.map((url, index) => (

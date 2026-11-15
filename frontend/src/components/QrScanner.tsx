@@ -29,8 +29,8 @@ export default function QrScanner({ onScan }: Props) {
         const name = err instanceof Error ? err.name : ''
         setError(
           name === 'NotAllowedError'
-            ? 'Camera permission denied. Use manual lookup.'
-            : 'Unable to start the camera. Use manual lookup.',
+            ? 'Izin kamera ditolak. Gunakan pencarian manual.'
+            : 'Kamera tidak bisa dibuka. Gunakan pencarian manual.',
         )
       })
 
